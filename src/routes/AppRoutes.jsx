@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 
 import Splash from "../pages/Splash/Splash";
 import Onboarding from "../pages/Onboarding/Onboarding";
@@ -17,7 +17,7 @@ import Leads from "../pages/Leads/Leads";
 
 function AppRoutes() {
   return (
-    <BrowserRouter>
+    
       <Routes>
         <Route path="/" element={<Splash/>}/>
         <Route path="/onboarding" element={<Onboarding/>}/>
@@ -37,7 +37,6 @@ function AppRoutes() {
         <Route path="/split-expense" element={<SplitExpense/>}/>  
         <Route path="/leads" element={<Leads/>}/>
       </Routes>
-    </BrowserRouter>
   );
 }
 

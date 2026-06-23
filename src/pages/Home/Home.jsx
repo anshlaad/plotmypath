@@ -315,7 +315,10 @@ export default function Home() {
           
           <div className="relative" ref={popupRef}>
             <button 
-              onClick={handleBellClick}
+  onClick={(e) => {
+    if (navigator.vibrate) navigator.vibrate(40); // 👈 Sirf ye haptic feedback add kiya hai
+    handleBellClick(e);
+  }}
               className="bg-white/10 p-2.5 rounded-full relative active:scale-90 transition cursor-pointer"
             >
               <FaBell size={16}/>

@@ -31,7 +31,7 @@ function BottomNav() {
   };
 
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-white/70 dark:bg-slate-900/70 backdrop-blur-lg shadow-[0_8px_24px_rgba(0,0,0,0.06)] rounded-full w-[92%] max-w-sm py-1.5 flex justify-between items-center px-2 border border-white/40 dark:border-slate-800/40 z-99999 transition-all duration-300 gap-1">
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-white/ dark:bg-white20 backdrop-blur-lg shadow-[0_8px_24px_rgba(0,0,0,0.06)] rounded-full w-[92%] max-w-sm py-1.5 flex justify-between items-center px-2 border border-white/40 dark:border-slate-800/40 z-99999 transition-all duration-300 gap-1">
       
       <NavLink to="/home" className="flex-1 flex justify-center">{({ isActive }) => <div className={getNavClass(isActive)}><FaHome size={15}/></div>}</NavLink>
       <NavLink to="/explore" className="flex-1 flex justify-center">{({ isActive }) => <div className={getNavClass(isActive)}><FaSearch size={15}/></div>}</NavLink>

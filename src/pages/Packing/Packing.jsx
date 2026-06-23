@@ -84,9 +84,11 @@ function Packing() {
       <div className="mx-auto mt-4 w-[88%] max-w-sm space-y-2">
         {items.map((item) => (
           <div
-            key={item.id}
-            onClick={() => togglePack(item.id)}
-            className={`border rounded-xl p-3 flex justify-between items-center cursor-pointer transition select-none ${
+            key={item.id}   
+            onClick={() => {
+              if (navigator.vibrate) navigator.vibrate(40); // 👈 Halki tick wali vibration
+              togglePack(item.id);
+            }}            className={`border rounded-xl p-3 flex justify-between items-center cursor-pointer transition select-none ${
               item.packed ? "bg-slate-50/80 border-gray-100 opacity-60" : "bg-white border-gray-100 shadow-sm"
             }`}
           >

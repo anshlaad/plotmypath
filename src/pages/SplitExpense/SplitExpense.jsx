@@ -292,8 +292,16 @@ export default function SplitExpense() {
                 </div>
               </div>
 
-              <button onClick={handleCreateGroup} className="w-full bg-indigo-600 py-3 rounded-xl text-xs font-bold mt-2 shadow-lg shadow-indigo-600/30">Start Trip</button>
-
+               <button 
+                 onClick={(e) => { 
+                   if(navigator.vibrate) navigator.vibrate([30, 50, 30]); 
+                   handleCreateGroup(e); 
+                 }} 
+                 className="w-full bg-indigo-600 py-3 rounded-xl text-xs font-bold mt-2 shadow-lg shadow-indigo-600/30"
+               >
+                 Start Trip
+               </button>
+               
               <div className="relative flex items-center py-2">
                 <div className="h-px bg-slate-700/35 backdrop-blur-md w-full"></div>
                 <span className="text-[10px] text-slate-500 bg-slate-800/40 backdrop-blur-md px-3 absolute left-1/2 -translate-x-1/2">OR</span>

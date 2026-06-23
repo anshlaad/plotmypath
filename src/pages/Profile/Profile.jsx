@@ -144,6 +144,36 @@ export default function Profile() {
       navigate("/login");
     }
   };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-slate-900 pb-20">
+        
+        {/* Lock Icon */}
+        <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mb-5 border border-slate-700 shadow-lg shadow-indigo-500/10">
+          <span className="text-3xl">🔒</span>
+        </div>
+        
+        {/* Text */}
+        <h2 className="text-white text-2xl font-bold mb-2">Login Required</h2>
+        <p className="text-slate-400 text-xs mb-8 leading-relaxed px-4">
+          Welcome to PlotMyPath! Please sign in to view your personalized itineraries, bucket list, and account settings.
+        </p>
+        
+        {/* Login Button */}
+        <button 
+          onClick={() => navigate('/login')} 
+          className="bg-indigo-600 text-white font-bold text-sm py-3 px-10 rounded-full shadow-lg shadow-indigo-500/30 hover:bg-indigo-500 transition-all active:scale-95 mb-10"
+        >
+          Sign In to Continue
+        </button>
+
+        {/* 👇 Bottom Nav lagana zaroori hai taaki user wapas home ja sake */}
+        <BottomNav /> 
+      </div>
+    );
+  }
+
   return (
     <motion.div 
       initial={{ opacity: 0 }} 
@@ -308,8 +338,13 @@ export default function Profile() {
         animate={{ y: 0, opacity: 1 }}
         className="mx-auto mt-4 w-[88%] max-w-sm bg-white dark:bg-slate-800 rounded-2xl p-2 shadow-sm border border-gray-100 dark:border-slate-700/50 space-y-1"
       >
-        <motion.div onClick={() => setDarkMode(!darkMode)} className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900/40 cursor-pointer transition">
-          <div className="flex items-center gap-3">
+<motion.div 
+  onClick={() => {
+    setDarkMode(!darkMode);
+    if (navigator.vibrate) navigator.vibrate(50); // 👈 Haptic feedback add kiya
+  }} 
+  className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900/40 cursor-pointer transition"
+>          <div className="flex items-center gap-3">
             <div className="bg-amber-50 dark:bg-amber-950/40 text-amber-600 p-2 rounded-xl text-xs">{darkMode ? <FaSun /> : <FaMoon />}</div>
             <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Dark Mode Architecture</span>
           </div>
@@ -327,10 +362,29 @@ export default function Profile() {
             <FaChevronRight className={`text-gray-400 text-xs transition-transform duration-300 ${showAbout ? "rotate-90" : ""}`} />
           </div>
           {showAbout && (
-            <div className="mt-4 bg-slate-50 dark:bg-slate-900/60 p-4 rounded-xl border border-gray-100 dark:border-slate-800 shadow-inner text-xs text-gray-600 dark:text-gray-300 space-y-2">
-              <h2 className="text-lg font-black text-blue-500 text-center mb-2">PlotMyPath Platform</h2>
-              <p>Built globally under specifications by Ansh Laad.</p>
+          <div className="mt-3 bg-slate-800/50 rounded-xl p-4 border border-slate-700/50 flex flex-col items-center text-center">
+  
+          {/* Highlighted Title */}
+          <h3 className="font-black text-indigo-400 text-lg tracking-wide mb-1.5">
+            PlotMyPath
+          </h3>
+
+          {/* App Kya Karta Hai */}
+          <p className="text-xs text-slate-300 leading-relaxed px-2">
+            Your AI-powered travel companion. We generate personalized itineraries, curate famous local spots, and bring destinations to life with cinematic visuals.
+          </p>
+
+          {/* Developer Info */}
+          <div className="flex items-center justify-center gap-2.5 mt-4 pt-3 border-t border-slate-700/50 w-full">           
+            <div className="w-7 h-7 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold text-[10px] border border-indigo-500/30">
+              AL
             </div>
+            <div>
+              <p className="text-[9px] text-slate-400 uppercase tracking-wide">Designed & Developed by</p>
+              <p className="text-xs font-bold text-white">Ansh Laad</p>
+            </div>
+          </div>
+        </div>
           )}
         </motion.div>
 
