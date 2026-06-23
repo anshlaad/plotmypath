@@ -8,7 +8,7 @@ export default function DestinationCard({ title, location, rating, place }) {
   useEffect(() => {
     // Agar image nahi hai ya unsplash ka default hai, tabhi fetch karo
     if (!place?.images?.[0] || imgSrc.includes("unsplash")) {
-      fetch(`http://localhost:5000/api/photos/${encodeURIComponent(title)}`)
+      fetch(`https://plotmypath-backend.onrender.com/api/photos/${encodeURIComponent(title)}`)
         .then(res => res.json())
         .then(data => {
           if (data.url) setImgSrc(data.url);

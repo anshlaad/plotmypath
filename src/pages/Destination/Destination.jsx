@@ -38,7 +38,7 @@ export default function Destination() {
   const fetchFromBackend = async (name) => {
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/get-guide`, {
+      const response = await fetch(`https://plotmypath-backend.onrender.com/api/get-guide`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: name })
@@ -49,7 +49,7 @@ export default function Destination() {
 
       const processImages = async (items, isHotel = false) => {
         return items ? await Promise.all(items.map(async (item) => {
-          const pRes = await fetch(`http://localhost:5000/api/photos/${encodeURIComponent(item.name + (isHotel ? " hotel" : ""))}`);
+          const pRes = await fetch(`https://plotmypath-backend.onrender.com/api/photos/${encodeURIComponent(item.name + (isHotel ? " hotel" : ""))}`);
           const pData = await pRes.json();
           return { ...item, image: pData.url };
         })) : [];
