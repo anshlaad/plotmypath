@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaGoogle, FaEye, FaEyeSlash, FaEnvelope, FaLock } from "react-icons/fa";
+import { auth } from "../../firebase/config";
 
 // 🔥 Firebase Auth Imports
-import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from "firebase/auth";
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -46,6 +47,19 @@ export default function Login() {
       setIsLoading(false);
     }
   };
+
+  const handleForgotPassword = async () => {
+  if (!email) {
+    alert("Please enter your email first!");
+    return;
+  }
+  try {
+    await sendPasswordResetEmail(auth, email);
+    alert("Password reset email sent! Check your inbox or Spam Folder.");
+  } catch (error) {
+    alert(error.message);
+  }
+};
 
   // 🚀 2. GOOGLE LOGIN
   const handleGoogleAuth = async () => {
@@ -107,6 +121,16 @@ export default function Login() {
                 {showPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
             </div>
+          </div>
+
+          <div className="flex justify-end w-full mt-1">
+            <button
+              type="button"
+              onClick={handleForgotPassword}
+              className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer bg-transparent border-none outline-none"
+            >
+              Forgot Password?
+            </button>
           </div>
 
           <button 
