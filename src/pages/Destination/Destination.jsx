@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { FaMapMarkerAlt, FaArrowLeft, FaRobot, FaUtensils, FaCamera, FaInfoCircle, FaHotel, FaStar, FaStore, FaClock, FaWallet } from "react-icons/fa";
 import BottomNav from "../../components/BottomNav";
+import TravelLoader from "../../components/TravelLoader";
 
 export default function Destination() {
   const { id } = useParams();
@@ -95,7 +96,9 @@ export default function Destination() {
         </div>
 
         {loading ? (
-          <div className="text-center py-10 text-xs animate-pulse">Requesting Server for Original Insights...</div>
+          <div className="py-10 w-full flex justify-center">
+             <TravelLoader />
+          </div>                
         ) : details ? (
           <>
             {/* ✅ PRO INSIGHTS & BUDGET */}
