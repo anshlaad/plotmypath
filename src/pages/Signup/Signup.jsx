@@ -4,7 +4,7 @@ import { FaGoogle, FaEye, FaEyeSlash, FaEnvelope, FaLock, FaUser } from "react-i
 import { getAuth, createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 // 🔥 NAYE IMPORTS DATABASE KE LIYE
 import { db } from "../../firebase/config"; 
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 
 export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
@@ -65,6 +65,7 @@ export default function Signup() {
         countryCode: countryCode,
         number: phoneNumber,
         phoneNumber: fullPhoneString, // Combined field
+        isPhoneVerified: false,
         role: "User", // Default role
         profileImage: "",
         completedTrips: 0,
@@ -93,27 +94,51 @@ export default function Signup() {
   };
 
   // 🚀 2. GOOGLE SIGNUP
-  const handleGoogleSignup = async () => {
+  const handleGoogleAuth = async () => {
+  try {
     const provider = new GoogleAuthProvider();
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      
-      // Note: Google signup se database document create karne ka logic 
-      // humne already AuthContext me handle kar liya hai, isliye yahan zaroorat nahi.
-      
-      sendWelcomeEmail(user.email, user.displayName);
-      navigate("/home");
-    } catch (err) {
-      console.error("Google Auth Error:", err.code);
-      if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
-        setError(""); 
-      } else {
-        setError("Google Sign-In failed. Please try again.");
-      }
-    }
-  };
+    
+    // 🔥 YE LINE SABSE ZAROORI HAI 🔥
+    // Ye Google ko force karegi ki wo har baar account choose karne ka popup dikhaye
+    provider.setCustomParameters({
+      prompt: 'select_account'
+    });
 
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+
+    // Database mein check kar rahe hain
+    const userDocRef = doc(db, "users", user.uid);
+    const userDocSnap = await getDoc(userDocRef);
+
+    // Agar user ekdum NAYA hai (Database mein pehli baar aaya hai)
+    if (!userDocSnap.exists()) {
+      await setDoc(userDocRef, {
+        uid: user.uid,
+        name: user.displayName,
+        email: user.email,
+        phoneNumber: "", // Ekdum khali field jayegi, koi 987... nahi!
+        photoURL: user.photoURL,
+        createdAt: new Date(),
+        lastLogin: new Date()
+      });
+    } else {
+      // Agar user pehle se database mein hai, toh sirf lastLogin time update karo
+      // Note: Agar pichli kisi error ki wajah se 987 number yahan pehle se save ho chuka tha,
+      // toh wo yahan se overwrite nahi hoga. Wo aapko Firebase se delete karna hoga.
+      await setDoc(userDocRef, { 
+        lastLogin: new Date() 
+      }, { merge: true });
+    }
+
+    alert("Google Sign-In Successful! 🎉");
+    navigate("/home"); 
+
+  } catch (error) {
+    console.error("Google Auth Error:", error);
+    alert("Google Sign-In Failed: " + error.message);
+  }
+};
   return (
     <div className="min-h-screen bg-linear-to-br from-blue-600 via-indigo-600 to-purple-700 flex items-center justify-center px-5 py-6 font-sans">
       <div className="w-full max-w-sm bg-white rounded-[35px] shadow-2xl p-8">
@@ -219,7 +244,7 @@ export default function Signup() {
         {/* Google Signup Button */}
         <button 
           type="button" 
-          onClick={handleGoogleSignup} 
+          onClick={handleGoogleAuth} 
           className="w-full border border-gray-200 rounded-xl py-4 flex items-center justify-center gap-3 hover:bg-gray-50 text-xs font-bold text-gray-700 transition"
         >
           <FaGoogle className="text-red-500" /> Sign Up with Google

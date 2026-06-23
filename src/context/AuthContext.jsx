@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { auth, db } from "../firebase/config"; // 🔥 Apne firebase.js file ka sahi path yahan check kar lena
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
 
 const AuthContext = createContext(null);
 
@@ -17,51 +17,62 @@ export function AuthProvider({ children }) {
   });
 
   // --- 🔥 FIREBASE AUTH & FIRESTORE ENGINE ---
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        // 1. User login ho gaya, Firestore se data fetch karo
-        const userRef = doc(db, "users", firebaseUser.uid);
-        const userSnap = await getDoc(userRef);
+  // Upar imports me 'onSnapshot' add karna mat bhoolna:
+// import { doc, setDoc, onSnapshot } from "firebase/firestore";
 
+useEffect(() => {
+  let unsubscribeSnapshot; // Real-time listener ko rokne ke liye
+
+  const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+    if (firebaseUser) {
+      const userRef = doc(db, "users", firebaseUser.uid);
+
+      // 🔥 NAYA LOGIC: getDoc ki jagah onSnapshot (Real-time data fetch)
+      unsubscribeSnapshot = onSnapshot(userRef, async (userSnap) => {
         let userData = {};
 
         if (userSnap.exists()) {
-          // Purana user hai, database se uthao
+          // Jaise hi Signup se number aayega, ye turant yahan catch ho jayega!
           userData = userSnap.data();
         } else {
-          // 🆕 First-time login: Default Profile database me create karo
+          // 🆕 First-time login via Google: Default Profile
           userData = {
             uid: firebaseUser.uid,
-            name: firebaseUser.displayName || "Ansh Laad", // Aapka default name
-            email: firebaseUser.email || "anshlaad@gmail.com",
+            name: firebaseUser.displayName || "",
+            email: firebaseUser.email || "",
             countryCode: "+91",
-            number: firebaseUser.phoneNumber ? firebaseUser.phoneNumber.replace("+91", "") : "9876543210",
-            phoneNumber: firebaseUser.phoneNumber || "+919876543210", // Combined field for UI
-            role: "IT Professional & Founder",
+            number: firebaseUser.phoneNumber ? firebaseUser.phoneNumber.replace("+91", "") : "",
+            phoneNumber: firebaseUser.phoneNumber || "",
+            role: "User",
             profileImage: firebaseUser.photoURL || "",
-            completedTrips: 12,
-            savedRoutes: 8,
+            completedTrips: 0,
+            savedRoutes: 0,
             likedPlaces: [],
             createdAt: new Date().toISOString()
           };
-          // Database me save kar diya
-          await setDoc(userRef, userData);
+          // Database me save kar diya (merge: true ke sath taaki clash na ho)
+          await setDoc(userRef, userData, { merge: true });
         }
 
-        // Local Storage aur State dono me save karo (Offline use ke liye)
+        // Local Storage aur State update
         localStorage.setItem("plotmypath_user", JSON.stringify(userData));
         setUser(userData);
-      } else {
-        // User logout ho gaya, local storage clear kar do
-        localStorage.removeItem("plotmypath_user");
-        setUser(null);
-      }
-      setLoading(false); // Checking done
-    });
+        setLoading(false); // Checking done
+      });
 
-    return () => unsubscribe();
-  }, []);
+    } else {
+      // User logout ho gaya
+      localStorage.removeItem("plotmypath_user");
+      setUser(null);
+      setLoading(false);
+    }
+  });
+
+  return () => {
+    unsubscribeAuth();
+    if (unsubscribeSnapshot) unsubscribeSnapshot(); // Cleanup
+  };
+}, []);
 
   // Sync Notifications to LocalStorage
   useEffect(() => {

@@ -6,8 +6,15 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const app = express();
 
+// 🚀 CHANGE 1: Added Vercel URL in CORS to allow frontend requests
 app.use(cors({
-    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],    methods: ['GET', 'POST'],
+    origin: [
+        'http://localhost:5173', 
+        'http://localhost:5174', 
+        'http://localhost:5175',
+        'https://plotmypath.vercel.app' // Vercel live link
+    ], 
+    methods: ['GET', 'POST'],
     credentials: true
 }));
 app.use(express.json());
@@ -102,4 +109,6 @@ app.get('/api/photos/:query', async (req, res) => {
     }
 });
 
-app.listen(5000, () => console.log(`✅ Server Ready on http://localhost:5000`));
+// 🚀 CHANGE 2: Dynamic Port for Render Deployment
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`✅ Server Ready on port ${PORT}`));

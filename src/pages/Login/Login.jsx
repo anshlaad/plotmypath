@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaGoogle, FaEye, FaEyeSlash, FaEnvelope, FaLock } from "react-icons/fa";
-import { auth } from "../../firebase/config";
-
+import { auth, db } from "../../firebase/config";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 // 🔥 Firebase Auth Imports
 import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from "firebase/auth";
 
@@ -63,17 +63,50 @@ export default function Login() {
 
   // 🚀 2. GOOGLE LOGIN
   const handleGoogleAuth = async () => {
-    setError("");
+  try {
     const provider = new GoogleAuthProvider();
     
-    try {
-      await signInWithPopup(auth, provider);
-      navigate("/home"); // Successful Google login ke baad home par
-    } catch (err) {
-      console.error(err);
-      setError("Google Sign-In failed. Please try again.");
+    // 🔥 YE LINE SABSE ZAROORI HAI 🔥
+    // Ye Google ko force karegi ki wo har baar account choose karne ka popup dikhaye
+    provider.setCustomParameters({
+      prompt: 'select_account'
+    });
+
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+
+    // Database mein check kar rahe hain
+    const userDocRef = doc(db, "users", user.uid);
+    const userDocSnap = await getDoc(userDocRef);
+
+    // Agar user ekdum NAYA hai (Database mein pehli baar aaya hai)
+    if (!userDocSnap.exists()) {
+      await setDoc(userDocRef, {
+        uid: user.uid,
+        name: user.displayName,
+        email: user.email,
+        phoneNumber: "", // Ekdum khali field jayegi, koi 987... nahi!
+        photoURL: user.photoURL,
+        createdAt: new Date(),
+        lastLogin: new Date()
+      });
+    } else {
+      // Agar user pehle se database mein hai, toh sirf lastLogin time update karo
+      // Note: Agar pichli kisi error ki wajah se 987 number yahan pehle se save ho chuka tha,
+      // toh wo yahan se overwrite nahi hoga. Wo aapko Firebase se delete karna hoga.
+      await setDoc(userDocRef, { 
+        lastLogin: new Date() 
+      }, { merge: true });
     }
-  };
+
+    alert("Google Sign-In Successful! 🎉");
+    navigate("/home"); 
+
+  } catch (error) {
+    console.error("Google Auth Error:", error);
+    alert("Google Sign-In Failed: " + error.message);
+  }
+};
 
   return (
     <div className="min-h-screen bg-linear-to-br from-blue-600 via-indigo-600 to-purple-700 flex items-center justify-center px-5 font-sans">

@@ -33,7 +33,7 @@ export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(user?.name || "Ansh Laad");
   const [editCountryCode, setEditCountryCode] = useState(user?.countryCode || "+91"); 
-  const [editNumber, setEditNumber] = useState(user?.number || "9876543210");
+  const [editNumber, setEditNumber] = useState(user?.number || "");
   const [editRole, setEditRole] = useState(user?.role || "IT Professional & Founder");
   const [editImage, setEditImage] = useState(user?.profileImage || "");
   const [editEmail, setEditEmail] = useState(user?.email || "");
