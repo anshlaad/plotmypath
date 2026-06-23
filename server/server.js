@@ -22,7 +22,7 @@ app.use(express.json());
 const travelCache = {};
 
 app.get('/', (req, res) => {
-    res.send("PlotMyPath Backend is Running Smoothly! 🚀");
+    res.send("Hy! Ansh, PlotMyPath Backend is Running Smoothly! 🚀");
 });
 
 // Gemini Travel Guide API Route
@@ -37,7 +37,6 @@ app.post('/api/get-guide', async (req, res) => {
         return res.json(travelCache[cityName]);
     }
 
-    // 🔑 APNI REAL GEMINI KEY YAHAN DAALO
     const MY_GEMINI_KEY = process.env.GEMINI_API_KEY; 
 
     try {
@@ -72,14 +71,19 @@ app.post('/api/get-guide', async (req, res) => {
         }`;
 
         const result = await model.generateContent(prompt);
-        // Ab Regex ki zaroorat nahi, direct JSON aayega
+
+        // 🔥 JADOO YAHAN HAI: Ye extra kachra (```json) ko saaf karega taaki 500 error na aaye
+        let rawText = result.response.text();
+        rawText = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
+
+       
         const cleanJson = JSON.parse(result.response.text()); 
         
         travelCache[cityName] = cleanJson;
         res.json(cleanJson);
 
     } catch (error) {
-        // 🚨 AB DUMMY DATA NAHI JAYEGA, DIRECT ERROR LOG HOGA
+
         console.error("❌ REAL ERROR DETECTED:", error.message);
         res.status(500).json({ error: "Failed to fetch AI guide from Google" });
     }
