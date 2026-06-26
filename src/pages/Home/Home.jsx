@@ -397,11 +397,13 @@ export default function Home() {
             {/* APP INTRO VIDEO SECTION */}
             <div className="px-5 mt-6 mb-2">
               <div className="rounded-2xl overflow-hidden shadow-lg relative border border-gray-100 bg-black group cursor-pointer">
-                {/* 🟢 YAHAN APNI VIDEO KA LINK DAAL DENA */}
                 <video 
                   className="w-full h-44 object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-300"
-                  autoPlay loop muted playsInline
-                  src="https://www.w3schools.com/html/mov_bbb.mp4" 
+                  autoPlay 
+                  loop 
+                  muted 
+                  playsInline
+                  src="/intro.mp4" 
                 />
                 <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4 pointer-events-none">
                   <h3 className="text-white font-black text-base drop-shadow-md">PlotMyPath in Action 🚀</h3>
