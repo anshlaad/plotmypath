@@ -3,37 +3,29 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-
-// 👇 NEW: Firebase Admin SDK import kiya
 const admin = require("firebase-admin");
 
-// Initialize Firebase Admin SDK
+// 🛠️ Firebase Initialization (Fixed Initialization)
+let adminDb;
 try {
-  // Service Account ko load karo
-  const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT 
-    ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT) 
-    : require("./firebase-adminsdk.json");
+    const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT 
+        ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT) 
+        : require("./firebase-adminsdk.json");
 
-  // FIX: admin.apps.length hata diya, seedha initialize try karenge
-  // Agar pehle se initialize hai, toh error ko ignore kar denge
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
-  });
-  console.log("🔥 Firebase Admin Initialized Successfully!");
+    if (!admin.apps.length) {
+        admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount)
+        });
+        console.log("🔥 Firebase Admin Initialized Successfully!");
+    }
+    adminDb = admin.firestore();
 } catch (err) {
-  // Agar error "already exists" hai toh ignore karo, warna show karo
-  if (err.code === 'app/duplicate-app') {
-    console.log("✅ Firebase Admin already initialized.");
-  } else {
-    console.error("❌ Firebase Admin Init Error:", err);
-  }
+    console.error("❌ Firebase Init Failed:", err);
 }
-
-const adminDb = admin.firestore();
 
 const app = express();
 
-// 🚀 CHANGE 1: Added Vercel URL in CORS to allow frontend requests
+// 🚀 CORS settings (Original)
 app.use(cors({
     origin: [
         'http://localhost:5173', 
@@ -52,7 +44,7 @@ app.get('/', (req, res) => {
     res.send("Hy! Ansh, PlotMyPath Backend is Running Smoothly! 🚀");
 });
 
-// Gemini Travel Guide API Route
+// Gemini Travel Guide API Route (Original Prompt)
 app.post('/api/get-guide', async (req, res) => {
     const { name } = req.body;
     if (!name) return res.status(400).json({ error: "Place name is required" });
@@ -69,9 +61,8 @@ app.post('/api/get-guide', async (req, res) => {
     try {
         console.log(`📡 [API CALL] Fetching fresh REAL data for: ${name}...`);
         const genAI = new GoogleGenerativeAI(MY_GEMINI_KEY);
-        
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-2.5-flash",
+            model: "gemini-1.5-flash", 
             generationConfig: { responseMimeType: "application/json" } 
         }); 
 
@@ -83,22 +74,20 @@ app.post('/api/get-guide', async (req, res) => {
             "article": "Write a 3-sentence factual and engaging travel guide article about ${name}.", 
             "touristPlaces": [
                {"name": "Exact Name of Place", "desc": "Short description", "type": "Heritage/Nature/City"}
-           ], 
-           "famousFood": [
+            ], 
+            "famousFood": [
               {
                   "name": "Exact Name of Local Dish", 
                   "desc": "Short description", 
                   "shop": "Name of a specific, highly-rated, and authentic shop or restaurant in ${name} that is famous for this dish."
               }
-          ],
-          "topStays": [
+            ],
+            "topStays": [
               {"name": "Exact Name of Hotel in ${name}", "rating": "4.5", "desc": "Short description"}
-          ]
+            ]
         }`;
 
         const result = await model.generateContent(prompt);
-
-        // 🔥 FIXED BUG: Use cleaned text for JSON parsing
         let rawText = result.response.text();
         rawText = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
 
@@ -106,28 +95,25 @@ app.post('/api/get-guide', async (req, res) => {
         
         travelCache[cityName] = cleanJson;
         res.json(cleanJson);
-
     } catch (error) {
         console.error("❌ REAL ERROR DETECTED:", error.message);
         res.status(500).json({ error: "Failed to fetch AI guide from Google" });
     }
 });
 
-// Photo Proxy Route (Using Pexels)
+// Photo Proxy Route (Original)
 app.get('/api/photos/:query', async (req, res) => {
     const { query } = req.params;
-    
     const MY_PEXELS_KEY = process.env.PEXELS_API_KEY; 
 
     try {
         const pexelsRes = await axios.get(`https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=1`, {
             headers: { Authorization: MY_PEXELS_KEY }
         });
-        
         if (pexelsRes.data.photos && pexelsRes.data.photos.length > 0) {
             return res.json({ url: pexelsRes.data.photos[0].src.medium });
         } else {
-            throw new Error("No photo found on Pexels for this query");
+            throw new Error("No photo found");
         }
     } catch (error) {
         console.log(`⚠️ Image not found for: ${query}, sending default placeholder.`);
@@ -135,46 +121,32 @@ app.get('/api/photos/:query', async (req, res) => {
     }
 });
 
-// 👇 NEW: Firebase Push Notification API (Admin Panel isko hit karega)
+// Push Notification API (Original)
 app.post("/api/send-bulk-notification", async (req, res) => {
-  const { title, body } = req.body;
+  if (!adminDb) return res.status(500).json({ error: "Database not initialized" });
 
+  const { title, body } = req.body;
   try {
     let tokens = [];
-
-    // 1. Logged-in users ke tokens nikal rahe hain
     const usersSnap = await adminDb.collection("users").get();
-    usersSnap.forEach(doc => {
-      if (doc.data().fcmToken) tokens.push(doc.data().fcmToken);
-    });
+    usersSnap.forEach(doc => { if (doc.data().fcmToken) tokens.push(doc.data().fcmToken); });
 
-    // 2. Guest users ke tokens nikal rahe hain
     const guestsSnap = await adminDb.collection("guest_tokens").get();
-    guestsSnap.forEach(doc => {
-      if (doc.data().token) tokens.push(doc.data().token);
-    });
+    guestsSnap.forEach(doc => { if (doc.data().token) tokens.push(doc.data().token); });
 
-    if (tokens.length === 0) {
-      return res.status(400).json({ error: "No tokens found in database." });
-    }
+    if (tokens.length === 0) return res.status(400).json({ error: "No tokens found." });
 
-    const message = {
+    const response = await admin.messaging().sendEachForMulticast({
       notification: { title, body },
       tokens: tokens, 
-    };
-
-    const response = await admin.messaging().sendEachForMulticast(message);
-    res.status(200).json({ 
-      success: true, 
-      message: `Notification sent! Success: ${response.successCount}, Failed: ${response.failureCount}` 
     });
-
+    
+    res.status(200).json({ success: true, message: `Sent: ${response.successCount}` });
   } catch (error) {
     console.error("Error sending push notification:", error);
-    res.status(500).json({ error: "Failed to send notifications" });
+    res.status(500).json({ error: "Failed to send" });
   }
 });
 
-// 🚀 CHANGE 2: Dynamic Port for Render Deployment
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`✅ Server Ready on port ${PORT}`));
