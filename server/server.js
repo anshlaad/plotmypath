@@ -7,29 +7,27 @@ const admin = require("firebase-admin");
 
 // 🛠️ Firebase Initialization (Fixed Initialization)
 let adminDb;
+
 try {
     let serviceAccount;
-    
-    // Check karo ki environment variable hai ya file
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-        console.log("✅ Using Service Account from Environment Variables");
-        serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+        // Hum parse kar rahe hain, isme \n ki dikkat nahi aayegi agar JSON minified hai
+        serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT.replace(/\\n/g, '\n'));
     } else {
-        console.log("⚠️ Env variable missing, trying local file...");
-        serviceAccount = require("./firebase-adminsdk.json");
+        throw new Error("Service Account variable missing");
     }
 
     if (!admin.apps.length) {
         admin.initializeApp({
             credential: admin.credential.cert(serviceAccount)
         });
-        console.log("🔥 Firebase Admin Initialized Successfully!");
+        console.log("🔥 Firebase Admin Initialized Successfully from Env!");
     }
     adminDb = admin.firestore();
 } catch (err) {
-    console.error("❌ CRITICAL ERROR DURING INIT:", err.message);
-    // Yahan hum exact error message print kar rahe hain
+    console.error("❌ CRITICAL ERROR:", err.message);
 }
+
 
 const app = express();
 
