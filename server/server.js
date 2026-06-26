@@ -7,25 +7,28 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 // 👇 NEW: Firebase Admin SDK import kiya
 const admin = require("firebase-admin");
 
-// 🛠️ FIX: Initialize karne ka behtar tareeka
+// 🔥 BULLETPROOF INITIALIZATION
+let serviceAccount;
 try {
-  // Service Account setup
-  const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT 
-    ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT) 
-    : require("./firebase-adminsdk.json");
-
-  // Pehle check karo ki kya koi app already initialize hai
-  if (!admin.apps || admin.apps.length === 0) {
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
-    });
-    console.log("🔥 Firebase Admin Initialized Successfully!");
-  }
+  // Render environment variable ya file se load karo
+  const rawServiceAccount = process.env.FIREBASE_SERVICE_ACCOUNT 
+    ? process.env.FIREBASE_SERVICE_ACCOUNT 
+    : require("fs").readFileSync("./server/firebase-adminsdk.json", "utf8");
+    
+  serviceAccount = typeof rawServiceAccount === 'string' ? JSON.parse(rawServiceAccount) : rawServiceAccount;
 } catch (err) {
-  console.error("❌ Firebase Admin Init Error:", err);
+  console.error("❌ Error loading Service Account:", err);
 }
 
-const adminDb = admin.firestore();
+// Initialize Admin
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+  });
+}
+
+// 🛠️ FIX: firestore access ka sahi tarika
+const db = admin.firestore();
 
 const app = express();
 
