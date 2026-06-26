@@ -19,13 +19,19 @@ export default function Leads() {
 
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // IN-APP NOTI STATES
   const [notiMessage, setNotiMessage] = useState("");
   const [isSendingNoti, setIsSendingNoti] = useState(false);
+
+  // 🚀 PUSH NOTI STATES (NEW)
+  const [pushTitle, setPushTitle] = useState("");
+  const [pushBody, setPushBody] = useState("");
+  const [isSendingPush, setIsSendingPush] = useState(false);
   
   // ✅ ADMIN LOGIN HANDLER
   const handleLogin = (e) => {
     e.preventDefault();
-    // 👇 Yahan aap apna password change kar sakte ho
     if (passwordInput === "Admin@123") {
       setIsAuthenticated(true);
       sessionStorage.setItem("admin_auth", "true");
@@ -37,7 +43,7 @@ export default function Leads() {
   };
 
   const fetchLeads = async () => {
-    if (!isAuthenticated) return; // Bina login leads fetch na ho
+    if (!isAuthenticated) return; 
     try {
       const querySnapshot = await getDocs(collection(db, "leads"));
       const leadsData = querySnapshot.docs
@@ -68,6 +74,7 @@ export default function Leads() {
     }
   };
 
+  // ✅ IN-APP NOTIFICATION HANDLER (PURANA WALA)
   const handleSendNotification = async (e) => {
     e.preventDefault();
     if (!notiMessage.trim()) return;
@@ -89,6 +96,36 @@ export default function Leads() {
     }
   };
 
+  // 🚀 PUSH NOTIFICATION HANDLER (NAYA WALA)
+  const handleSendPushNotification = async (e) => {
+    e.preventDefault();
+    if (!pushTitle.trim() || !pushBody.trim()) return;
+
+    setIsSendingPush(true);
+    try {
+      const response = await fetch("https://plotmypath-backend.onrender.com/api/send-bulk-notification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: pushTitle, body: pushBody })
+      });
+
+      const result = await response.json();
+      
+      if (response.ok) {
+        alert("✅ Push Notification Sent: " + result.message); 
+        setPushTitle('');
+        setPushBody('');
+      } else {
+        alert("❌ Error: " + result.error);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("❌ Backend se connect nahi ho paya!");
+    } finally {
+      setIsSendingPush(false);
+    }
+  };
+
   const handleEmailClick = (email) => {
     if (!email || email === "No Email") {
       alert("No email address provided by this lead.");
@@ -105,9 +142,6 @@ export default function Leads() {
     return new Date(l.createdAt).toDateString() === new Date().toDateString();
   }).length;
 
-  // --------------------------------------------------------
-  // ✅ 1. IF NOT LOGGED IN -> SHOW PASSWORD SCREEN
-  // --------------------------------------------------------
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-slate-100 flex flex-col justify-center items-center p-4">
@@ -142,9 +176,6 @@ export default function Leads() {
     );
   }
 
-  // --------------------------------------------------------
-  // ✅ 2. IF LOGGED IN -> SHOW FULL CRM DASHBOARD
-  // --------------------------------------------------------
   return (
     <div className="min-h-screen bg-slate-100 p-4 pb-36 font-sans">
       
@@ -177,19 +208,19 @@ export default function Leads() {
         </div>
       </div>
       
-      {/* ADMIN NOTIFICATION BOX */}
-      <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 mb-6 w-full text-left relative overflow-hidden">
+      {/* 1️⃣ ADMIN NOTIFICATION BOX (IN-APP) */}
+      <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 mb-4 w-full text-left relative overflow-hidden">
         <div className="absolute top-0 right-0 p-4 opacity-5">
            <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"></path></svg>
         </div>
         <h2 className="text-xs font-black text-indigo-600 mb-3 uppercase tracking-wider flex items-center gap-2">
-          <span>📢</span> Broadcast App Update
+          <span>📢</span> In-App Update (App Khuli Hogi Tab)
         </h2>
         <form onSubmit={handleSendNotification} className="flex flex-col gap-3 relative z-10">
           <textarea 
             value={notiMessage}
             onChange={(e) => setNotiMessage(e.target.value)}
-            placeholder="Push a live alert to all app users..."
+            placeholder="Push a live alert inside the app..."
             className="w-full p-3 border border-slate-200 rounded-2xl text-xs font-medium outline-none focus:border-indigo-500 bg-slate-50 resize-none transition-colors"
             rows="2"
             required
@@ -201,7 +232,44 @@ export default function Leads() {
               isSendingNoti ? 'bg-slate-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 active:scale-95'
             }`}
           >
-            {isSendingNoti ? 'Broadcasting...' : 'Push to Users'}
+            {isSendingNoti ? 'Broadcasting...' : 'Push In-App'}
+          </button>
+        </form>
+      </div>
+
+      {/* 2️⃣ NEW: PUSH NOTIFICATION BOX (BACKGROUND) */}
+      <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 mb-6 w-full text-left relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-4 opacity-5">
+           <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+        </div>
+        <h2 className="text-xs font-black text-rose-600 mb-3 uppercase tracking-wider flex items-center gap-2">
+          <span>🔔</span> Global Push Noti (App Band Hogi Tab Bhi)
+        </h2>
+        <form onSubmit={handleSendPushNotification} className="flex flex-col gap-3 relative z-10">
+          <input 
+            type="text"
+            value={pushTitle}
+            onChange={(e) => setPushTitle(e.target.value)}
+            placeholder="Title (e.g., New Feature Alert!)"
+            className="w-full p-3 border border-slate-200 rounded-2xl text-xs font-bold outline-none focus:border-rose-500 bg-slate-50 transition-colors"
+            required
+          />
+          <textarea 
+            value={pushBody}
+            onChange={(e) => setPushBody(e.target.value)}
+            placeholder="Message jo screen par pop hoga..."
+            className="w-full p-3 border border-slate-200 rounded-2xl text-xs font-medium outline-none focus:border-rose-500 bg-slate-50 resize-none transition-colors"
+            rows="2"
+            required
+          />
+          <button 
+            type="submit" 
+            disabled={isSendingPush}
+            className={`px-4 py-2.5 text-xs font-black text-white rounded-xl transition-all w-fit shadow-md ${
+              isSendingPush ? 'bg-slate-400 cursor-not-allowed' : 'bg-rose-600 hover:bg-rose-700 active:scale-95'
+            }`}
+          >
+            {isSendingPush ? 'Sending...' : 'Blast Push Notification'}
           </button>
         </form>
       </div>

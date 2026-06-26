@@ -7,8 +7,12 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   // User state ab Firebase se sync hoke aayega, loading state zaruri hai taaki blink na ho
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+const [user, setUser] = useState(() => {
+  const savedUser = localStorage.getItem("plotmypath_user");
+  return savedUser ? JSON.parse(savedUser) : null;
+});
+
+ const [loading, setLoading] = useState(true);
 
   // Notifications ka local storage wala system ekdum perfect hai, isko waise hi rakha hai
   const [notifications, setNotifications] = useState(() => {
@@ -17,62 +21,59 @@ export function AuthProvider({ children }) {
   });
 
   // --- 🔥 FIREBASE AUTH & FIRESTORE ENGINE ---
-  // Upar imports me 'onSnapshot' add karna mat bhoolna:
-// import { doc, setDoc, onSnapshot } from "firebase/firestore";
+  useEffect(() => {
+    let unsubscribeSnapshot; // Real-time listener ko rokne ke liye
 
-useEffect(() => {
-  let unsubscribeSnapshot; // Real-time listener ko rokne ke liye
+    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        const userRef = doc(db, "users", firebaseUser.uid);
 
-  const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
-    if (firebaseUser) {
-      const userRef = doc(db, "users", firebaseUser.uid);
+        // 🔥 NAYA LOGIC: getDoc ki jagah onSnapshot (Real-time data fetch)
+        unsubscribeSnapshot = onSnapshot(userRef, async (userSnap) => {
+          let userData = {};
 
-      // 🔥 NAYA LOGIC: getDoc ki jagah onSnapshot (Real-time data fetch)
-      unsubscribeSnapshot = onSnapshot(userRef, async (userSnap) => {
-        let userData = {};
+          if (userSnap.exists()) {
+            // Jaise hi Signup se number aayega, ye turant yahan catch ho jayega!
+            userData = userSnap.data();
+          } else {
+            // 🆕 First-time login via Google: Default Profile
+            userData = {
+              uid: firebaseUser.uid,
+              name: firebaseUser.displayName || "",
+              email: firebaseUser.email || "",
+              countryCode: "+91",
+              number: firebaseUser.phoneNumber ? firebaseUser.phoneNumber.replace("+91", "") : "",
+              phoneNumber: firebaseUser.phoneNumber || "",
+              role: "User",
+              profileImage: firebaseUser.photoURL || "",
+              completedTrips: 0,
+              savedRoutes: 0,
+              likedPlaces: [],
+              createdAt: new Date().toISOString()
+            };
+            // Database me save kar diya (merge: true ke sath taaki clash na ho)
+            await setDoc(userRef, userData, { merge: true });
+          }
 
-        if (userSnap.exists()) {
-          // Jaise hi Signup se number aayega, ye turant yahan catch ho jayega!
-          userData = userSnap.data();
-        } else {
-          // 🆕 First-time login via Google: Default Profile
-          userData = {
-            uid: firebaseUser.uid,
-            name: firebaseUser.displayName || "",
-            email: firebaseUser.email || "",
-            countryCode: "+91",
-            number: firebaseUser.phoneNumber ? firebaseUser.phoneNumber.replace("+91", "") : "",
-            phoneNumber: firebaseUser.phoneNumber || "",
-            role: "User",
-            profileImage: firebaseUser.photoURL || "",
-            completedTrips: 0,
-            savedRoutes: 0,
-            likedPlaces: [],
-            createdAt: new Date().toISOString()
-          };
-          // Database me save kar diya (merge: true ke sath taaki clash na ho)
-          await setDoc(userRef, userData, { merge: true });
-        }
+          // Local Storage aur State update
+          localStorage.setItem("plotmypath_user", JSON.stringify(userData));
+          setUser(userData);
+          setLoading(false); // Checking done
+        });
 
-        // Local Storage aur State update
-        localStorage.setItem("plotmypath_user", JSON.stringify(userData));
-        setUser(userData);
-        setLoading(false); // Checking done
-      });
+      } else {
+        // User logout ho gaya
+        localStorage.removeItem("plotmypath_user");
+        setUser(null);
+        setLoading(false);
+      }
+    });
 
-    } else {
-      // User logout ho gaya
-      localStorage.removeItem("plotmypath_user");
-      setUser(null);
-      setLoading(false);
-    }
-  });
-
-  return () => {
-    unsubscribeAuth();
-    if (unsubscribeSnapshot) unsubscribeSnapshot(); // Cleanup
-  };
-}, []);
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeSnapshot) unsubscribeSnapshot(); // Cleanup
+    };
+  }, []);
 
   // Sync Notifications to LocalStorage
   useEffect(() => {
@@ -123,13 +124,13 @@ useEffect(() => {
     if (auth.currentUser) {
       const userRef = doc(db, "users", auth.currentUser.uid);
       try {
-      await setDoc(userRef, updatedData, { merge: true });
-      console.log("Firestore updated successfully with:", updatedData);
-    } catch (err) {
-      console.error("Firestore update failed:", err);
+        await setDoc(userRef, updatedData, { merge: true });
+        console.log("Firestore updated successfully with:", updatedData);
+      } catch (err) {
+        console.error("Firestore update failed:", err);
+      }
     }
-  }
-};
+  };
 
   // Toggle Like Places (Local + Firestore Database)
   const toggleLikePlace = async (place) => {
@@ -156,10 +157,19 @@ useEffect(() => {
     }
   };
 
+  // 🔥 YAHAN CHANGE HUA HAI: Jab tak Firebase data load kar raha hai, Spinner dikhao
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex justify-center items-center">
+        <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
   return (
     <AuthContext.Provider value={{ 
       user, 
-      loading, // Naya addition: Taki app load hote waqt UI manage kar sako
+      loading, 
       updateProfile, 
       notifications, 
       addNotification, 
@@ -167,8 +177,8 @@ useEffect(() => {
       toggleLikePlace, 
       logoutUser 
     }}>
-      {/* Jab tak Firebase auth check kar raha hai, children render mat karo (Prevents flickers) */}
-      {!loading && children}
+      {/* 🔥 Ab hum yahan direct children render kar sakte hain kyunki loading upar handle ho chuki hai */}
+      {children}
     </AuthContext.Provider>
   );
 }

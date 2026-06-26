@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaGoogle, FaEye, FaEyeSlash, FaEnvelope, FaLock, FaUser } from "react-icons/fa";
 import { getAuth, createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 // 🔥 NAYE IMPORTS DATABASE KE LIYE
 import { db } from "../../firebase/config"; 
+import { useAuth } from "../../context/AuthContext";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 
 export default function Signup() {
@@ -18,6 +19,14 @@ export default function Signup() {
 
   const navigate = useNavigate();
   const auth = getAuth(); 
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      // Agar user already login hai, toh usko turant Home par fek do
+      navigate("/home", { replace: true }); 
+    }
+  }, [user, navigate]);
 
   const sendWelcomeEmail = (userEmail, userName) => {
     console.log(`Simulated: Welcome Email sent to ${userEmail}`);

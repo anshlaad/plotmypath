@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaGoogle, FaEye, FaEyeSlash, FaEnvelope, FaLock } from "react-icons/fa";
 import { auth, db } from "../../firebase/config";
 import { doc, getDoc, setDoc } from "firebase/firestore";
+import { useAuth } from "../../context/AuthContext";
 // 🔥 Firebase Auth Imports
 import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from "firebase/auth";
 
@@ -15,6 +16,13 @@ export default function Login() {
   
   const navigate = useNavigate();
   const auth = getAuth(); // Firebase Auth Instance
+  const { user } = useAuth();
+  useEffect(() => {
+    if (user) {
+      // Agar user already login hai, toh usko turant Home par fek do
+      navigate("/home", { replace: true }); 
+    }
+  }, [user, navigate]);
 
   // 📧 1. EMAIL & PASSWORD LOGIN
   const handleLoginSubmit = async (e) => {
@@ -27,7 +35,7 @@ export default function Login() {
     }
 
     // 2. Strict Email Format Check (Regex)
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;useAuth 
     if (!emailRegex.test(email.trim())) {
       setError("Please enter a valid email address (e.g. name@domain.com)!");
       return;

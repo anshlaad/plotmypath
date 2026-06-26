@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { FaBriefcase, FaMoon, FaSun, FaSignOutAlt, FaChevronRight, FaInfoCircle, FaEdit, FaPhone, FaTimes, FaCamera, FaMapMarkerAlt, FaBookmark, FaTrash, FaHeartBroken, FaHeart } from "react-icons/fa";
+// 👇 NEW: FaSignInAlt import kiya Login button ke liye
+import { FaBriefcase, FaMoon, FaSun, FaSignOutAlt, FaChevronRight, FaInfoCircle, FaEdit, FaPhone, FaTimes, FaCamera, FaMapMarkerAlt, FaBookmark, FaTrash, FaHeartBroken, FaHeart, FaSignInAlt } from "react-icons/fa";
 import BottomNav from "../../components/BottomNav";
 import { motion, AnimatePresence } from "framer-motion";
 import emailjs from '@emailjs/browser';
@@ -10,7 +11,6 @@ import emailjs from '@emailjs/browser';
 import { getAuth, signOut } from "firebase/auth";
 
 export default function Profile() {
-  // Purana logoutUser hata diya, direct Firebase use karenge
   const { user, updateProfile } = useAuth();
   const navigate = useNavigate();
   const auth = getAuth(); // Firebase auth instance
@@ -23,18 +23,19 @@ export default function Profile() {
 
   const [showAllSaved, setShowAllSaved] = useState(false);
   const [showAllLiked, setShowAllLiked] = useState(false);
+  
   // 🎒 Saved Itineraries State
   const [savedTrips, setSavedTrips] = useState([]);
   
-  // ❤️ Dynamic Liked Places State (Initialized from AuthContext or fallback local)
+  // ❤️ Dynamic Liked Places State
   const [likedPlaces, setLikedPlaces] = useState(user?.likedPlaces || []);
 
   // Profile Editor States
   const [isEditing, setIsEditing] = useState(false);
-  const [editName, setEditName] = useState(user?.name || "Ansh Laad");
+  const [editName, setEditName] = useState(user?.name || "");
   const [editCountryCode, setEditCountryCode] = useState(user?.countryCode || "+91"); 
   const [editNumber, setEditNumber] = useState(user?.number || "");
-  const [editRole, setEditRole] = useState(user?.role || "IT Professional & Founder");
+  const [editRole, setEditRole] = useState(user?.role || "");
   const [editImage, setEditImage] = useState(user?.profileImage || "");
   const [editEmail, setEditEmail] = useState(user?.email || "");
   
@@ -90,34 +91,30 @@ export default function Profile() {
   };
 
   const handleSaveProfileClick = () => {
-  if (!editName.trim() || !editNumber.trim()) return alert("Fields required!");
-  
-  const randomOtp = Math.floor(1000 + Math.random() * 9000).toString();
-  setSystemGeneratedOtp(randomOtp);
+    if (!editName.trim() || !editNumber.trim()) return alert("Fields required!");
+    
+    const randomOtp = Math.floor(1000 + Math.random() * 9000).toString();
+    setSystemGeneratedOtp(randomOtp);
 
-  // TESTING KE LIYE: Email bhejne ka try karo, agar fail ho toh alert kar do
-  emailjs.send('service_e3k8gml', 'template_wtkufbg', {
-    to_email: editEmail,
-    otp_code: randomOtp,
-    name: user.name || "User" 
-  }, 'PMgBh3rAMaoK7cLju')
-  .then(() => {
-    alert("OTP sent to your email!");
-    setShowOtpScreen(true);
-  })
-  .catch((err) => {
-    console.error(err);
-    // Yahan hum alert mein error dikha rahe hain taaki aapko pata chale
-    alert("Email Error: " + err.text); 
-    // AGAR EMAIL FAIL HO JAYE, TOH TEST OTP SHOW KAR DO TAAKI AAP TEST KAR SAKO
-    alert("For testing, your OTP is: " + randomOtp);
-    setShowOtpScreen(true);
-  });
-};
+    emailjs.send('service_e3k8gml', 'template_wtkufbg', {
+      to_email: editEmail,
+      otp_code: randomOtp,
+      name: user?.name || "User" 
+    }, 'PMgBh3rAMaoK7cLju')
+    .then(() => {
+      alert("OTP sent to your email!");
+      setShowOtpScreen(true);
+    })
+    .catch((err) => {
+      console.error(err);
+      alert("Email Error: " + err.text); 
+      alert("For testing, your OTP is: " + randomOtp);
+      setShowOtpScreen(true);
+    });
+  };
 
   const handleVerifyOtpSubmit = async () => {
     if (otpValue === systemGeneratedOtp) {
-      // ✅ UPDATED: Sending all fields to context
       const updatedData = { 
         name: editName.trim(), 
         countryCode: editCountryCode, 
@@ -145,34 +142,7 @@ export default function Profile() {
     }
   };
 
-  if (!user) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-slate-900 pb-20">
-        
-        {/* Lock Icon */}
-        <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mb-5 border border-slate-700 shadow-lg shadow-indigo-500/10">
-          <span className="text-3xl">🔒</span>
-        </div>
-        
-        {/* Text */}
-        <h2 className="text-white text-2xl font-bold mb-2">Login Required</h2>
-        <p className="text-slate-400 text-xs mb-8 leading-relaxed px-4">
-          Welcome to PlotMyPath! Please sign in to view your personalized itineraries, bucket list, and account settings.
-        </p>
-        
-        {/* Login Button */}
-        <button 
-          onClick={() => navigate('/login')} 
-          className="bg-indigo-600 text-white font-bold text-sm py-3 px-10 rounded-full shadow-lg shadow-indigo-500/30 hover:bg-indigo-500 transition-all active:scale-95 mb-10"
-        >
-          Sign In to Continue
-        </button>
-
-        {/* 👇 Bottom Nav lagana zaroori hai taaki user wapas home ja sake */}
-        <BottomNav /> 
-      </div>
-    );
-  }
+  // 🔥 REMOVED: Bada wala "Login Required" lock yahan se hata diya hai
 
   return (
     <motion.div 
@@ -181,12 +151,39 @@ export default function Profile() {
       className={`min-h-screen pb-32 transition-colors duration-300 overflow-y-auto ${darkMode ? "bg-slate-900 text-white" : "bg-slate-50 text-gray-800"}`}
     >
       <motion.div className="bg-linear-to-r from-violet-600 to-indigo-600 rounded-b-[35px] p-6 pt-10 pb-12 text-white text-center shadow-lg relative">
-        <button onClick={() => setIsEditing(true)} className="absolute top-4 right-4 bg-white/20 p-2.5 rounded-full text-xs font-semibold flex items-center gap-1 active:scale-95 transition"><FaEdit /> Modify</button>
+        
+        {/* 👇 NEW: Login/Signup Button (Top Left - Sirf guest ko dikhega) */}
+        {!user && (
+          <button 
+            onClick={() => navigate("/login")} 
+            className="absolute top-4 left-4 bg-white/20 px-3 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 active:scale-95 transition backdrop-blur-sm shadow-sm"
+          >
+            <FaSignInAlt /> Login
+          </button>
+        )}
+
+        {/* 👇 UPDATED: Modify Button (Top Right - Sirf logged-in user ko dikhega) */}
+        {user && (
+          <button onClick={() => setIsEditing(true)} className="absolute top-4 right-4 bg-white/20 p-2.5 rounded-full text-xs font-semibold flex items-center gap-1 active:scale-95 transition">
+            <FaEdit /> Edit
+          </button>
+        )}
+
         <div className="w-20 h-20 bg-white rounded-full mx-auto flex items-center justify-center border-4 border-white/20 shadow-md overflow-hidden relative">
-          {user?.profileImage ? <img src={user.profileImage} alt="" className="w-full h-full object-cover" /> : <span className="text-3xl font-black text-indigo-600">{user?.name ? user.name.substring(0,2).toUpperCase() : "AL"}</span>}
+          {user?.profileImage ? (
+            <img src={user.profileImage} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-3xl font-black text-indigo-600">
+              {user?.name ? user.name.substring(0,2).toUpperCase() : "G"}
+            </span>
+          )}
         </div>
-        <h1 className="text-xl font-bold mt-3 tracking-wide">{user?.name || "Ansh Laad"}</h1>
-        <p className="opacity-75 text-xs font-medium flex items-center justify-center gap-1 mt-0.5"><FaBriefcase className="text-[10px]" /> {user?.role || "IT Professional & Founder"}</p>
+        
+        {/* Guest ko default naam dikhayega */}
+        <h1 className="text-xl font-bold mt-3 tracking-wide">{user?.name || "Guest User"}</h1>
+        <p className="opacity-75 text-xs font-medium flex items-center justify-center gap-1 mt-0.5">
+          <FaBriefcase className="text-[10px]" /> {user?.role || "Traveller"}
+        </p>
       </motion.div>
 
       {/* Editor Modal Overlay */}
@@ -199,7 +196,7 @@ export default function Profile() {
             </div>
 
             {!showOtpScreen ? (
-              <div className="space-y-3.5">
+              <div className="space-y-3.5 mt-3">
                 <div>
                   <label className="text-[10px] font-black text-slate-400 uppercase">Avatar Image</label>
                   <input type="file" accept="image/*" onChange={handleImageUploadChange} className="w-full text-xs mt-1 bg-slate-900 p-2 rounded" />
@@ -210,14 +207,14 @@ export default function Profile() {
                 </div>
 
                 <div>
-            <label className="text-[10px] font-black text-slate-400 uppercase">Email Address</label>
-            <input 
-              type="email" 
-              value={editEmail} 
-              onChange={(e) => setEditEmail(e.target.value)} 
-              className="w-full bg-slate-900 border border-slate-700 p-2.5 mt-1 rounded-xl text-xs" 
-            />
-          </div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase">Email Address</label>
+                  <input 
+                    type="email" 
+                    value={editEmail} 
+                    onChange={(e) => setEditEmail(e.target.value)} 
+                    className="w-full bg-slate-900 border border-slate-700 p-2.5 mt-1 rounded-xl text-xs" 
+                  />
+                </div>
 
                 <div className="flex gap-2">
                     <select value={editCountryCode} onChange={(e) => setEditCountryCode(e.target.value)} className="bg-slate-900 text-xs p-2 rounded-xl border">
@@ -232,7 +229,7 @@ export default function Profile() {
                 <button onClick={handleSaveProfileClick} className="w-full bg-indigo-600 text-white py-3 rounded-xl text-xs font-bold">Verify Changes</button>
               </div>
             ) : (
-              <div className="space-y-3 text-center py-2">
+              <div className="space-y-3 text-center py-2 mt-3">
                 <input type="text" placeholder="Enter OTP" value={otpValue} onChange={(e) => setOtpValue(e.target.value)} className="w-full border p-3 text-center text-sm rounded-xl bg-slate-900" />
                 <button onClick={handleVerifyOtpSubmit} className="w-full bg-emerald-600 text-white py-3 rounded-xl text-xs font-bold">Confirm Settings</button>
               </div>
@@ -264,9 +261,9 @@ export default function Profile() {
         {activeSegment === "saved" ? (
           <div className="space-y-2.5">
             {displayedSaved.map((trip) => (
-              <div key={trip.id} onClick={() => {navigate("/planner", { state: { savedTripData: trip } });   // Yahan hum "/planner" par state ke saath bhej rahe hain
+              <div key={trip.id} onClick={() => {navigate("/planner", { state: { savedTripData: trip } }); 
                 }}              
-                className="bg-slate-800 border border-slate-700/60 p-3.5 rounded-2xl flex justify-between items-center shadow-sm">
+                className="bg-slate-800 border border-slate-700/60 p-3.5 rounded-2xl flex justify-between items-center shadow-sm cursor-pointer">
                 <div className="truncate pr-3">
                   <h4 className="text-xs font-black text-white uppercase truncate">{trip.meta?.route}</h4>
                   <p className="text-[10px] text-slate-400 font-bold uppercase">{trip.meta?.duration}</p>
@@ -281,12 +278,11 @@ export default function Profile() {
         ) : (
           <div className="space-y-2.5">
             {displayedLiked.map((fav) => (
-              <div key={fav.id} onClick={() => { navigate(`/destination/${fav.id}`, { state: { placeData: fav } });  // Yahan hum destination detail page par bhej rahe hain
+              <div key={fav.id} onClick={() => { navigate(`/destination/${fav.id}`, { state: { placeData: fav } });
               }} 
-    
-              className="bg-slate-800 border border-slate-700 p-3.5 rounded-2xl flex items-center justify-between">
+              className="bg-slate-800 border border-slate-700 p-3.5 rounded-2xl flex items-center justify-between cursor-pointer">
                 <h4 className="text-xs font-black text-white truncate">{fav.name}</h4>
-                <button onClick={(e) => handleUnlikePlace(fav.id, e)} className="text-rose-400"><FaHeartBroken size={11} /></button>
+                <button onClick={(e) => handleUnlikePlace(fav.id, e)} className="text-rose-400 p-2"><FaHeartBroken size={11} /></button>
               </div>
             ))}
             {likedPlaces.length > 2 && (
@@ -305,7 +301,6 @@ export default function Profile() {
         <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider pl-1">Personal Details</h3>
         <div className="bg-slate-900/60 p-3 rounded-xl space-y-2.5 text-xs text-white/90">
           
-          {/* 🔥 Automatic Firebase Email */}
           <p className="truncate">
             <span className="font-bold text-indigo-400 mr-1">Email:</span> 
             <span className="text-slate-100 font-medium">
@@ -313,7 +308,6 @@ export default function Profile() {
             </span>
           </p>
           
-          {/* 🔥 Automatic Firebase Phone Number */}
           <p>
             <span className="font-bold text-indigo-400 mr-1">Mobile:</span> 
             <span className="text-slate-100 font-bold tracking-wider">
@@ -321,7 +315,6 @@ export default function Profile() {
             </span>
           </p>
           
-          {/* Bio Tag */}
           <p className="truncate">
             <span className="font-bold text-indigo-400 mr-1">Bio Tag:</span> 
             <span className="text-slate-100 font-medium">
@@ -336,15 +329,16 @@ export default function Profile() {
       <motion.div 
         initial={{ y: 50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="mx-auto mt-4 w-[88%] max-w-sm bg-white dark:bg-slate-800 rounded-2xl p-2 shadow-sm border border-gray-100 dark:border-slate-700/50 space-y-1"
+        className="mx-auto mt-4 w-[88%] max-w-sm bg-white dark:bg-slate-800 rounded-2xl p-2 shadow-sm border border-gray-100 dark:border-slate-700/50 space-y-1 mb-6"
       >
-<motion.div 
-  onClick={() => {
-    setDarkMode(!darkMode);
-    if (navigator.vibrate) navigator.vibrate(50); // 👈 Haptic feedback add kiya
-  }} 
-  className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900/40 cursor-pointer transition"
->          <div className="flex items-center gap-3">
+        <motion.div 
+          onClick={() => {
+            setDarkMode(!darkMode);
+            if (navigator.vibrate) navigator.vibrate(50); 
+          }} 
+          className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900/40 cursor-pointer transition"
+        >          
+          <div className="flex items-center gap-3">
             <div className="bg-amber-50 dark:bg-amber-950/40 text-amber-600 p-2 rounded-xl text-xs">{darkMode ? <FaSun /> : <FaMoon />}</div>
             <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Dark Mode Architecture</span>
           </div>
@@ -375,7 +369,7 @@ export default function Profile() {
           </p>
 
           {/* Developer Info */}
-          <div className="flex items-center justify-center gap-2.5 mt-4 pt-3 border-t border-slate-700/50 w-full">           
+          <div className="flex items-center justify-center gap-2.5 mt-4 pt-3 border-t border-slate-700/50 w-full">          
             <div className="w-7 h-7 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold text-[10px] border border-indigo-500/30">
               AL
             </div>
@@ -388,20 +382,20 @@ export default function Profile() {
           )}
         </motion.div>
 
-        {/* ✅ FIXED: Direct Firebase Auth handleLogout called here */}
-        <motion.div onClick={handleLogout} className="flex items-center justify-between p-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/20 cursor-pointer transition text-red-500">
-          <div className="flex items-center gap-3">
-            <div className="bg-red-50 dark:bg-red-950/40 text-red-500 p-2 rounded-xl text-xs"><FaSignOutAlt /></div>
-            <span className="text-xs font-bold">Logout</span>
-          </div>
-          <FaChevronRight className="text-red-300 text-xs" />
-        </motion.div>
+        {/* 👇 UPDATED: Logout Button sirf tabhi dikhega jab user login hoga */}
+        {user && (
+          <motion.div onClick={handleLogout} className="flex items-center justify-between p-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/20 cursor-pointer transition text-red-500">
+            <div className="flex items-center gap-3">
+              <div className="bg-red-50 dark:bg-red-950/40 text-red-500 p-2 rounded-xl text-xs"><FaSignOutAlt /></div>
+              <span className="text-xs font-bold">Logout</span>
+            </div>
+            <FaChevronRight className="text-red-300 text-xs" />
+          </motion.div>
+        )}
       </motion.div>
       
 
       {!isEditing && <BottomNav />}
     </motion.div>
-
-    
   );
 }

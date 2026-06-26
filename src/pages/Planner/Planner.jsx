@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import BottomNav from "../../components/BottomNav";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom"; // 🔥 useNavigate yahan add kiya hai
 import { useAuth } from "../../context/AuthContext";
-import { db } from "../../firebase/config"; // Path sahi check kar lena
+import { db } from "../../firebase/config"; 
 import { collection, addDoc } from "firebase/firestore";
 import { FaRobot } from "react-icons/fa";
 import { motion } from "framer-motion";
@@ -31,13 +31,11 @@ const BookmarkIcon = ({ saved }) => (
     strokeWidth={saved ? 0 : 2}
   >
     {saved ? (
-      // 🔥 SAVED STATE: Filled Green Bookmark with a White Tick
       <>
         <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
         <path stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" d="M9 11l2 2 4-4" />
       </>
     ) : (
-      // ⚪ NORMAL STATE: Outline Bookmark
       <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
     )}
   </svg>
@@ -51,9 +49,9 @@ const ExclamationIcon = () => (
 
 export default function Planner() {
   const location = useLocation();
+  const navigate = useNavigate(); // 🔥 React Router Navigation hook initialize kiya
   const incomingDestination = location.state?.autofillDestination || "";
 
-  // 🎯 FIXED: Duplicate variables destination instances removed entirely
   const [source, setSource] = useState("");
   const [destination, setDestination] = useState(incomingDestination);
   const [days, setDays] = useState("3");
@@ -62,19 +60,17 @@ export default function Planner() {
   const [isDownloading, setIsDownloading] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  
   const { addNotification, user } = useAuth();
   const { savedTripData } = location.state || {};
   const [saveStatus, setSaveStatus] = useState(false);
 
-  
   useEffect(() => {
-    // Agar profile se data aaya hai, toh usko screen par set kar do
     if (savedTripData) {
       setCurrentItinerary(savedTripData);
     }
   }, [savedTripData]);
   
-  // Effect hook to capture destination updates dynamically if route state refreshes
   useEffect(() => {
     if (incomingDestination) {
       setDestination(incomingDestination);
@@ -90,7 +86,6 @@ export default function Planner() {
     }
   });
   
-
   const fetchWithRetry = async (url, options) => {
     const delays = [1000, 2000, 4000, 8000, 16000];
     for (let i = 0; i < delays.length; i++) {
@@ -110,14 +105,11 @@ export default function Planner() {
 
   const itineraryRef = useRef(null);
 
-  // PDF Download Function (Native Browser Print)
   const handleDownloadPDF = () => {
-    // Thoda sa delay de rahe hain taaki UI ekdum ready ho jaye
     setTimeout(() => {
       window.print();
     }, 100);
   };
-
 
   const handleGenerateItinerary = async (e) => {
     e.preventDefault();
@@ -130,7 +122,6 @@ export default function Planner() {
     setAlertMessage("");
     setSaveStatus("Save to Profile");
 
-    // 🔥 FIX: Yahan systemPrompt define karo
     const systemPrompt = `Act as an expert travel planner. You MUST respond strictly in a raw valid JSON format matching the requested schema. Do not enclose inside markdown block.`;
 
     try {
@@ -179,7 +170,7 @@ export default function Planner() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: userQuery }] }],
-          systemInstruction: { parts: [{ text: systemPrompt }] }, // 🔥 Ab error nahi aayega
+          systemInstruction: { parts: [{ text: systemPrompt }] }, 
           tools: [{ googleSearch: {} }] 
         })
       });
@@ -200,32 +191,26 @@ export default function Planner() {
       setCurrentItinerary(cleanJsonPayload);
       localStorage.setItem("plotmypath_live_ai_itinerary", JSON.stringify(cleanJsonPayload));
 
-      // --- LEAD CAPTURE ENGINE ---
-    // --- LEAD CAPTURE ENGINE (FIRESTORE SYNC) ---
-    // ✅ YAHAN SOURCE AUR DAYS ADD KIYA HAI BINA KUCH HATAAYE
     const newLead = {
       name: user?.displayName || user?.name || "Guest User",
       phone: user?.phoneNumber || user?.phone || "No Number",
       email: user?.email || "No Email",
       
-      source: source,             // 👈 Yahan Source pass kar diya
+      source: source,             
       destination: destination,
-      days: days,                 // 👈 Yahan Days pass kar diya
+      days: days,                 
       budget: budgetType,
       date: new Date().toLocaleDateString(),
-      createdAt: new Date().toISOString(), // 👈 Time sorting ke liye
+      createdAt: new Date().toISOString(), 
       status: "New"
     };
 
     try {
-      // Firebase Firestore mein data push karo
       await addDoc(collection(db, "leads"), newLead);
       console.log("Lead successfully captured in Firestore!");
     } catch (dbError) {
       console.error("Firestore Save Error:", dbError);
     }
-    // ---------------------------------
-    // ---------------------------------
 
   } catch (error) {
     console.error("Error saving lead:", error);
@@ -233,26 +218,31 @@ export default function Planner() {
     setIsGenerating(false);
   }
 };
+
   const handleSaveToProfile = () => {
     if (!currentItinerary) return;
+
+    // 🔥 ACTION-BASED AUTHENTICATION (Bouncer)
+    if (!user) {
+      // Agar user login nahi hai, toh pyaar se redirect kar do
+      alert("Please sign in to save itineraries to your profile! 🔒");
+      navigate("/login");
+      return; 
+    }
+
     try {
       const existingSaved = localStorage.getItem("plotmypath_saved_itineraries");
       let savedArray = existingSaved ? JSON.parse(existingSaved) : [];
       
-      // 'some' ki jagah 'findIndex' use kiya taaki pata chale kaunsa delete karna hai
       const savedIndex = savedArray.findIndex(
         (item) => item.meta?.route === currentItinerary.meta?.route && item.meta?.duration === currentItinerary.meta?.duration
       );
       
       if (savedIndex >= 0) {
-        // 🔥 AGAR PEHLE SE SAVED HAI -> Unsave (Remove) kar do
         savedArray.splice(savedIndex, 1);
         localStorage.setItem("plotmypath_saved_itineraries", JSON.stringify(savedArray));
-        
-        // Unsave hone par text wapas normal kar diya
         setSaveStatus(""); 
       } else {
-        // 🔥 AGAR SAVED NAHI HAI -> Save kar do
         const itineraryWithId = {
           ...currentItinerary,
           savedAt: new Date().toLocaleDateString(),
@@ -260,8 +250,6 @@ export default function Planner() {
         };
         savedArray.push(itineraryWithId);
         localStorage.setItem("plotmypath_saved_itineraries", JSON.stringify(savedArray));
-        
-        // Save hone par aapka tick mark
         setSaveStatus("✓"); 
       }
     } catch (e) {
@@ -276,30 +264,19 @@ export default function Planner() {
     setSaveStatus("Save to Profile");
   };
 
-
-  // 🔥 PREMIUM SKELETON LOADER (Fake Glowing Cards)
+  // 🔥 PREMIUM SKELETON LOADER
   const SkeletonLoader = () => (
     <div className="mt-6 space-y-5 animate-pulse">
-      {/* Header Skeleton */}
       <div className="h-24 bg-slate-200 rounded-2xl w-full"></div>
-      
-      {/* Hotels Skeleton */}
       <div className="h-48 bg-slate-200 rounded-3xl w-full"></div>
-      
-      {/* Transit Skeleton */}
       <div className="h-32 bg-slate-200 rounded-3xl w-full"></div>
-      
-      {/* Days Skeleton */}
       {[1, 2, 3].map((i) => (
         <div key={i} className="h-56 bg-slate-200 rounded-3xl w-full"></div>
       ))}
     </div>
   );
 
-
-
   return (
-    /* 📱 FIXED EXTENSIONS: Added hidden scrollbar architecture utilities matching native rules */
     <div className="min-h-screen bg-slate-50 p-4 pb-36 text-left relative transition-all duration-300 font-sans overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] scrollbar-none">
     <div className="print:hidden">
       {alertMessage && (
@@ -315,23 +292,14 @@ export default function Planner() {
 
       {/* HEADER ROW */}
       <div className="flex items-center gap-3 mb-5 px-1">
-        
-        {/* 🔥 ANIMATED AI FAROBOT LOGO (BOUNCY EFFECT) */}
         <div className="relative flex items-center justify-center w-12 h-12 bg-linear-to-tr from-indigo-600 to-purple-600 rounded-2xl shadow-lg shadow-indigo-200 shrink-0">
-          
-          {/* Peeche ka halka glow */}
           <div className="absolute inset-0 rounded-2xl bg-indigo-400 animate-ping opacity-20"></div>
-          
-          {/* 🔥 Main Robot Icon jo ab BOUNCE karega */}
           <FaRobot className="text-white text-[26px] relative z-10 animate-bounce" />
-          
         </div>
-        
         <div>
           <h1 className="text-2xl font-black text-slate-800 tracking-tight">AI Itinerary</h1>
           <p className="text-xs text-slate-400 font-medium mt-0.5">Plan your perfect trip with our AI-powered itinerary builder</p>
         </div>
-        
       </div>
 
       {/* SETUP SELECTION PANELS */}
@@ -386,7 +354,7 @@ export default function Planner() {
           {/* 📄 PDF WRAPPER */}
           <div className="space-y-5 bg-slate-50 print:bg-white pb-10">
             
-            {/* HEADER CARD - Isme icons row ko update kiya hai */}
+            {/* HEADER CARD */}
             <div className="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-100 shadow-sm print:border-none print:shadow-none print:p-0">
               <div>
                 <h2 className="text-sm font-black text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
@@ -395,7 +363,6 @@ export default function Planner() {
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">{currentItinerary.meta?.budgetStrategy} • {currentItinerary.meta?.duration}</p>
               </div>
               
-              {/* 🔥 ICONS ROW: Save, Trash aur unke theek right me Download Icon */}
               <div className="flex items-center gap-2 print:hidden">
                 
                 {/* 1. Save to Profile Button */}
@@ -417,7 +384,7 @@ export default function Planner() {
                   <TrashIcon />
                 </button>
 
-                {/* 📥 3. NEW DOWNLOAD ICON BUTTON (Just right side of trash) */}
+                {/* 📥 3. NEW DOWNLOAD ICON BUTTON */}
                 <button 
                   onClick={handleDownloadPDF} 
                   className="p-2 border border-slate-200 bg-white hover:bg-indigo-50 text-indigo-600 rounded-xl transition-all cursor-pointer flex items-center justify-center shadow-sm"
@@ -504,8 +471,6 @@ export default function Planner() {
             </motion.div>
           )}
 
-          
-
           {currentItinerary.masterItinerary?.map((dayCard, dIdx) => (
              <motion.div 
                 key={dIdx} 
@@ -579,7 +544,7 @@ export default function Planner() {
                 Brilliant<span className="text-indigo-600">Events</span>
               </h1>
               <p className="text-[11px] font-bold text-slate-500 uppercase mt-1 tracking-widest">
-                Travel partbner & itinerary architect
+                Travel partner & itinerary architect
               </p>
               <p className="text-[11px] text-slate-400 mt-1 font-medium">
                 INDIA

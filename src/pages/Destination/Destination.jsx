@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { FaMapMarkerAlt, FaArrowLeft, FaRobot, FaUtensils, FaCamera, FaInfoCircle, FaHotel, FaStar, FaStore, FaClock, FaWallet } from "react-icons/fa";
+// 👇 NEW: FaHeart aur FaRegHeart import kiya Bucket List ke liye
+import { FaMapMarkerAlt, FaArrowLeft, FaRobot, FaUtensils, FaCamera, FaInfoCircle, FaHotel, FaStar, FaStore, FaClock, FaWallet, FaHeart, FaRegHeart } from "react-icons/fa";
 import BottomNav from "../../components/BottomNav";
 import TravelLoader from "../../components/TravelLoader";
+// 👇 NEW: Apna AuthContext import kiya
+import { useAuth } from "../../context/AuthContext";
 
 export default function Destination() {
   const { id } = useParams();
@@ -11,6 +14,9 @@ export default function Destination() {
   const [place, setPlace] = useState(null);
   const [details, setDetails] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // 👇 NEW: Context se user aur toggle function nikala
+  const { user, toggleLikePlace } = useAuth();
 
   useEffect(() => {
     // 1. Data load logic
@@ -34,8 +40,6 @@ export default function Destination() {
   // ✅ FIX: Dependency array mein sirf ID use karo (object nahi)
   }, [id, location.state?.placeData?.id]);
 
-  
-
   const fetchFromBackend = async (name) => {
     setLoading(true);
     try {
@@ -55,7 +59,6 @@ export default function Destination() {
           return { ...item, image: pData.url };
         })) : [];
       };
-      
 
       setDetails({
         ...data,
@@ -70,24 +73,51 @@ export default function Destination() {
     setLoading(false);
   };
 
+  // 👇 NEW: Ye function Action intercept karega
+  const handleLikeClick = async () => {
+    if (!user) {
+      // User login nahi hai toh pyaar se rok lo aur redirect karo
+      alert("Login Required ! 🔒");
+      navigate("/login");
+      return;
+    }
+    // Agar login hai toh like/unlike kar do aur vibrate karo
+    if (navigator.vibrate) navigator.vibrate(40);
+    await toggleLikePlace(place);
+  };
 
-  
+  // Check karo ki kya user ne is place ko pehle se like kiya hua hai
+  const isLiked = user?.likedPlaces?.some((p) => p.id === place?.id);
+
   if (!place) return <div className="text-white p-10 text-center">Loading...</div>;
 
   return (
     <div className="min-h-screen bg-slate-900 text-white pb-32 font-sans overflow-y-auto">
       {/* 📸 Dynamic Header Image */}
-<div className="w-full h-72 relative">
-  <img 
-    // ✅ Agar 'place.images' update ho gaya hai (backend se aane ke baad), toh wo dikhaye
-    src={place.images?.[0] || place.image} 
-    className="w-full h-full object-cover transition-all duration-700"
-    alt={place.name}
-  />
-  <button onClick={() => navigate(-1)} className="absolute top-6 left-4 p-3 bg-black/50 backdrop-blur-md rounded-full">
-    <FaArrowLeft />
-  </button>
-</div>
+      <div className="w-full h-72 relative">
+        <img 
+          src={place.images?.[0] || place.image} 
+          className="w-full h-full object-cover transition-all duration-700"
+          alt={place.name}
+        />
+        
+        {/* Back Button */}
+        <button onClick={() => navigate(-1)} className="absolute top-6 left-4 p-3 bg-black/50 backdrop-blur-md rounded-full active:scale-90 transition">
+          <FaArrowLeft />
+        </button>
+
+        {/* 👇 NEW: Premium Bucket List (Heart) Button */}
+        <button 
+          onClick={handleLikeClick} 
+          className="absolute top-6 right-4 p-3 bg-black/50 backdrop-blur-md rounded-full active:scale-90 transition shadow-lg"
+        >
+          {isLiked ? (
+            <FaHeart size={20} className="text-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.8)]" />
+          ) : (
+            <FaRegHeart size={20} className="text-white" />
+          )}
+        </button>
+      </div>
 
       <div className="px-5 -mt-10 relative space-y-6">
         <div className="bg-slate-800 p-6 rounded-3xl border border-slate-700 shadow-xl">
@@ -188,6 +218,7 @@ export default function Destination() {
           </>
         ) : null}
 
+        {/* 👇 Button waisa ka waisa rakha hai */}
         <button onClick={() => navigate("/planner", { state: { autofillDestination: place.name } })} className="w-full bg-indigo-600 hover:bg-indigo-700 py-4 rounded-2xl text-xs font-black flex items-center justify-center gap-2 transition-all active:scale-95">
           <FaRobot /> Build Route for {place.name}
         </button>

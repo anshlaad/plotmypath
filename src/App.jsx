@@ -1,8 +1,40 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useSwipeable } from "react-swipeable";
 import { motion, AnimatePresence } from "framer-motion";
 import AppRoutes from "./routes/AppRoutes.jsx";
+
+// 👇 FIX 1: Missing Imports add kar diye hain
+import { requestForToken, db } from './firebase/config';
+import { doc, setDoc } from "firebase/firestore"; 
+import { useAuth } from "./context/AuthContext"; // Path check kar lena agar alag ho
+
+// 🌟 FIX 2: INVISIBLE BACKGROUND COMPONENT 
+// Ye component UI mein kuch nahi dikhayega, bas chup-chaap peeche token save karega
+function NotificationManager() {
+  const { user } = useAuth(); 
+
+  useEffect(() => {
+    const setupNotifications = async () => {
+      const token = await requestForToken();
+      if (token) {
+        if (user) {
+          const userRef = doc(db, "users", user.uid);
+          await setDoc(userRef, { fcmToken: token }, { merge: true });
+          console.log("Token saved to User Profile!");
+        } else {
+          const guestRef = doc(db, "guest_tokens", token);
+          await setDoc(guestRef, { token: token, createdAt: new Date().toISOString() });
+          console.log("Guest Token saved!");
+        }
+      }
+    };
+    setupNotifications();
+  }, [user]);
+
+  return null; // Hidden component
+}
+
 
 function App() {
   const navigate = useNavigate();
@@ -56,10 +88,13 @@ function App() {
     // ✨ OUTER WRAPPER
     <div className="min-h-screen w-full bg-black flex justify-center overflow-hidden">
       
+      {/* 🚀 Ye humara invisible guard hai jo backend handle karega */}
+      <NotificationManager />
+
       {/* 📱 MOBILE CONTAINER */}
       <div 
         {...handlers} 
-        // 👇 Yahan maine overflow-hidden ko hata kar overflow-x-hidden kar diya hai
+        // 👇 Yahan overflow-x-hidden kar diya hai
         className="w-full max-w-md bg-slate-900 h-screen relative shadow-[0_0_50px_rgba(0,0,0,0.5)] border-x border-slate-800 overflow-x-hidden"
       >
         
@@ -80,7 +115,6 @@ function App() {
         </AnimatePresence>
 
       </div>
-      
     </div>
   );
 }

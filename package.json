@@ -17,6 +17,7 @@
     "country-code": "^0.0.3",
     "country-data": "^0.0.31",
     "firebase": "^12.15.0",
+    "firebase-admin": "^14.1.0",
     "framer-motion": "^12.41.0",
     "html-to-image": "^1.11.13",
     "html2canvas": "^1.4.1",

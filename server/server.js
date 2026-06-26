@@ -4,6 +4,25 @@ const cors = require('cors');
 const axios = require('axios');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
+// 👇 NEW: Firebase Admin SDK import kiya
+const admin = require("firebase-admin");
+
+// 🔥 RENDER-SAFE LOGIC: Agar Render par hai toh Env Variable se lega, local hai toh file se lega
+let serviceAccount;
+if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+  serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+} else {
+  serviceAccount = require("./firebase-adminsdk.json");
+}
+
+// Firebase Admin Initialize
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+  });
+}
+const adminDb = admin.firestore();
+
 const app = express();
 
 // 🚀 CHANGE 1: Added Vercel URL in CORS to allow frontend requests
@@ -12,7 +31,7 @@ app.use(cors({
         'http://localhost:5173', 
         'http://localhost:5174', 
         'http://localhost:5175',
-        'https://plotmypath.vercel.app' // Vercel live link
+        'https://plotmypath.vercel.app' 
     ], 
     methods: ['GET', 'POST'],
     credentials: true
@@ -43,7 +62,6 @@ app.post('/api/get-guide', async (req, res) => {
         console.log(`📡 [API CALL] Fetching fresh REAL data for: ${name}...`);
         const genAI = new GoogleGenerativeAI(MY_GEMINI_KEY);
         
-        // 🎯 MAGIC BULLET: Force Gemini to return ONLY pure JSON
         const model = genAI.getGenerativeModel({ 
             model: "gemini-2.5-flash",
             generationConfig: { responseMimeType: "application/json" } 
@@ -72,18 +90,16 @@ app.post('/api/get-guide', async (req, res) => {
 
         const result = await model.generateContent(prompt);
 
-        // 🔥 JADOO YAHAN HAI: Ye extra kachra (```json) ko saaf karega taaki 500 error na aaye
+        // 🔥 FIXED BUG: Use cleaned text for JSON parsing
         let rawText = result.response.text();
         rawText = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
 
-       
-        const cleanJson = JSON.parse(result.response.text()); 
+        const cleanJson = JSON.parse(rawText); 
         
         travelCache[cityName] = cleanJson;
         res.json(cleanJson);
 
     } catch (error) {
-
         console.error("❌ REAL ERROR DETECTED:", error.message);
         res.status(500).json({ error: "Failed to fetch AI guide from Google" });
     }
@@ -93,7 +109,6 @@ app.post('/api/get-guide', async (req, res) => {
 app.get('/api/photos/:query', async (req, res) => {
     const { query } = req.params;
     
-    // 🔑 APNI REAL PEXELS KEY YAHAN DAALO
     const MY_PEXELS_KEY = process.env.PEXELS_API_KEY; 
 
     try {
@@ -108,9 +123,48 @@ app.get('/api/photos/:query', async (req, res) => {
         }
     } catch (error) {
         console.log(`⚠️ Image not found for: ${query}, sending default placeholder.`);
-        // Agar Pexels fail hua, tabhi placeholder jayega
         res.json({ url: "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1" });
     }
+});
+
+// 👇 NEW: Firebase Push Notification API (Admin Panel isko hit karega)
+app.post("/api/send-bulk-notification", async (req, res) => {
+  const { title, body } = req.body;
+
+  try {
+    let tokens = [];
+
+    // 1. Logged-in users ke tokens nikal rahe hain
+    const usersSnap = await adminDb.collection("users").get();
+    usersSnap.forEach(doc => {
+      if (doc.data().fcmToken) tokens.push(doc.data().fcmToken);
+    });
+
+    // 2. Guest users ke tokens nikal rahe hain
+    const guestsSnap = await adminDb.collection("guest_tokens").get();
+    guestsSnap.forEach(doc => {
+      if (doc.data().token) tokens.push(doc.data().token);
+    });
+
+    if (tokens.length === 0) {
+      return res.status(400).json({ error: "No tokens found in database." });
+    }
+
+    const message = {
+      notification: { title, body },
+      tokens: tokens, 
+    };
+
+    const response = await admin.messaging().sendEachForMulticast(message);
+    res.status(200).json({ 
+      success: true, 
+      message: `Notification sent! Success: ${response.successCount}, Failed: ${response.failureCount}` 
+    });
+
+  } catch (error) {
+    console.error("Error sending push notification:", error);
+    res.status(500).json({ error: "Failed to send notifications" });
+  }
 });
 
 // 🚀 CHANGE 2: Dynamic Port for Render Deployment
