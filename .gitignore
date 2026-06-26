@@ -29,3 +29,4 @@ node_modules
 .env
 .DS_Store
 firebase-adminsdk.json
+firebase-admin-key.json
