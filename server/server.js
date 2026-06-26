@@ -7,28 +7,29 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 // 👇 NEW: Firebase Admin SDK import kiya
 const admin = require("firebase-admin");
 
-// 🔥 BULLETPROOF INITIALIZATION
-let serviceAccount;
+// Initialize Firebase Admin SDK
 try {
-  // Render environment variable ya file se load karo
-  const rawServiceAccount = process.env.FIREBASE_SERVICE_ACCOUNT 
-    ? process.env.FIREBASE_SERVICE_ACCOUNT 
-    : require("fs").readFileSync("./server/firebase-adminsdk.json", "utf8");
-    
-  serviceAccount = typeof rawServiceAccount === 'string' ? JSON.parse(rawServiceAccount) : rawServiceAccount;
-} catch (err) {
-  console.error("❌ Error loading Service Account:", err);
-}
+  // Service Account ko load karo
+  const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT 
+    ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT) 
+    : require("./firebase-adminsdk.json");
 
-// Initialize Admin
-if (!admin.apps.length) {
+  // FIX: admin.apps.length hata diya, seedha initialize try karenge
+  // Agar pehle se initialize hai, toh error ko ignore kar denge
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount)
   });
+  console.log("🔥 Firebase Admin Initialized Successfully!");
+} catch (err) {
+  // Agar error "already exists" hai toh ignore karo, warna show karo
+  if (err.code === 'app/duplicate-app') {
+    console.log("✅ Firebase Admin already initialized.");
+  } else {
+    console.error("❌ Firebase Admin Init Error:", err);
+  }
 }
 
-// 🛠️ FIX: firestore access ka sahi tarika
-const db = admin.firestore();
+const adminDb = admin.firestore();
 
 const app = express();
 
