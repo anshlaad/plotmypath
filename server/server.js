@@ -7,28 +7,32 @@ const admin = require("firebase-admin");
 
 // 🛠️ Firebase Initialization (Fixed Initialization)
 let adminDb;
-
 try {
     let serviceAccount;
+    
+    // 1. Check Base64 Env Variable (Most Secure for Render)
     if (process.env.FIREBASE_BASE64) {
-        // Base64 decode karke parse karo
         const decoded = Buffer.from(process.env.FIREBASE_BASE64, 'base64').toString('utf-8');
         serviceAccount = JSON.parse(decoded);
     } else {
+        // 2. Fallback to Local File
         serviceAccount = require("./firebase-adminsdk.json");
     }
 
-    if (!admin.apps.length) {
+    // 🚀 FIX: Ab yahan crash nahi hoga! Hum safely check kar rahe hain.
+    if (!admin.apps || admin.apps.length === 0) {
         admin.initializeApp({
             credential: admin.credential.cert(serviceAccount)
         });
-        console.log("🔥 Firebase Admin Initialized Successfully via Base64!");
+        console.log("🔥 Firebase Admin Initialized Successfully!");
     }
+    
     adminDb = admin.firestore();
+    console.log("✅ Firestore Connected!");
+
 } catch (err) {
     console.error("❌ CRITICAL ERROR:", err.message);
 }
-
 
 const app = express();
 
