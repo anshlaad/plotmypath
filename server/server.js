@@ -3,31 +3,34 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const admin = require("firebase-admin");
 
-// 🛠️ Firebase Initialization (Fixed Initialization)
+// 🚀 FIX: Modern Modular Imports (Bypasses all 'undefined' errors)
+const { initializeApp, cert, getApps } = require("firebase-admin/app");
+const { getFirestore } = require("firebase-admin/firestore");
+const { getMessaging } = require("firebase-admin/messaging");
+
+// 🛠️ Bulletproof Firebase Init
 let adminDb;
 try {
     let serviceAccount;
     
-    // 1. Check Base64 Env Variable (Most Secure for Render)
     if (process.env.FIREBASE_BASE64) {
         const decoded = Buffer.from(process.env.FIREBASE_BASE64, 'base64').toString('utf-8');
         serviceAccount = JSON.parse(decoded);
     } else {
-        // 2. Fallback to Local File
         serviceAccount = require("./firebase-adminsdk.json");
     }
 
-    // 🚀 FIX: Ab yahan crash nahi hoga! Hum safely check kar rahe hain.
-    if (!admin.apps || admin.apps.length === 0) {
-        admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount)
+    // Safely check and initialize using modular functions
+    if (getApps().length === 0) {
+        initializeApp({
+            credential: cert(serviceAccount)
         });
         console.log("🔥 Firebase Admin Initialized Successfully!");
     }
     
-    adminDb = admin.firestore();
+    // Connect Firestore using modular function
+    adminDb = getFirestore();
     console.log("✅ Firestore Connected!");
 
 } catch (err) {
@@ -36,7 +39,6 @@ try {
 
 const app = express();
 
-// 🚀 CORS settings (Original)
 app.use(cors({
     origin: [
         'http://localhost:5173', 
@@ -55,7 +57,7 @@ app.get('/', (req, res) => {
     res.send("Hy! Ansh, PlotMyPath Backend is Running Smoothly! 🚀");
 });
 
-// Gemini Travel Guide API Route (Original Prompt)
+// Gemini Travel Guide API Route
 app.post('/api/get-guide', async (req, res) => {
     const { name } = req.body;
     if (!name) return res.status(400).json({ error: "Place name is required" });
@@ -112,7 +114,7 @@ app.post('/api/get-guide', async (req, res) => {
     }
 });
 
-// Photo Proxy Route (Original)
+// Photo Proxy Route
 app.get('/api/photos/:query', async (req, res) => {
     const { query } = req.params;
     const MY_PEXELS_KEY = process.env.PEXELS_API_KEY; 
@@ -132,7 +134,7 @@ app.get('/api/photos/:query', async (req, res) => {
     }
 });
 
-// Push Notification API (Original)
+// 🚀 Push Notification API (Updated to use getMessaging)
 app.post("/api/send-bulk-notification", async (req, res) => {
   if (!adminDb) return res.status(500).json({ error: "Database not initialized" });
 
@@ -147,7 +149,8 @@ app.post("/api/send-bulk-notification", async (req, res) => {
 
     if (tokens.length === 0) return res.status(400).json({ error: "No tokens found." });
 
-    const response = await admin.messaging().sendEachForMulticast({
+    // Use modular messaging function here
+    const response = await getMessaging().sendEachForMulticast({
       notification: { title, body },
       tokens: tokens, 
     });
