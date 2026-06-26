@@ -10,18 +10,19 @@ let adminDb;
 
 try {
     let serviceAccount;
-    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-        // Hum parse kar rahe hain, isme \n ki dikkat nahi aayegi agar JSON minified hai
-        serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT.replace(/\\n/g, '\n'));
+    if (process.env.FIREBASE_BASE64) {
+        // Base64 decode karke parse karo
+        const decoded = Buffer.from(process.env.FIREBASE_BASE64, 'base64').toString('utf-8');
+        serviceAccount = JSON.parse(decoded);
     } else {
-        throw new Error("Service Account variable missing");
+        serviceAccount = require("./firebase-adminsdk.json");
     }
 
     if (!admin.apps.length) {
         admin.initializeApp({
             credential: admin.credential.cert(serviceAccount)
         });
-        console.log("🔥 Firebase Admin Initialized Successfully from Env!");
+        console.log("🔥 Firebase Admin Initialized Successfully via Base64!");
     }
     adminDb = admin.firestore();
 } catch (err) {
