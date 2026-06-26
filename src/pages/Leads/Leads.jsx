@@ -214,7 +214,7 @@ export default function Leads() {
            <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"></path></svg>
         </div>
         <h2 className="text-xs font-black text-indigo-600 mb-3 uppercase tracking-wider flex items-center gap-2">
-          <span>📢</span> In-App Update (App Khuli Hogi Tab)
+          <span>📢</span> In-App Update
         </h2>
         <form onSubmit={handleSendNotification} className="flex flex-col gap-3 relative z-10">
           <textarea 
@@ -243,7 +243,7 @@ export default function Leads() {
            <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
         </div>
         <h2 className="text-xs font-black text-rose-600 mb-3 uppercase tracking-wider flex items-center gap-2">
-          <span>🔔</span> Global Push Noti (App Band Hogi Tab Bhi)
+          <span>🔔</span> Global Push Notification
         </h2>
         <form onSubmit={handleSendPushNotification} className="flex flex-col gap-3 relative z-10">
           <input 

@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { FaCheckSquare, FaSquare, FaPlus, FaTrashAlt, FaSuitcase } from "react-icons/fa";
+import React, { useState, useEffect } from "react";
+import { FaCheckSquare, FaSquare, FaPlus, FaTrashAlt, FaSuitcase, FaCheckCircle } from "react-icons/fa";
 import BottomNav from "../../components/BottomNav";
+import { motion, AnimatePresence } from "framer-motion";
 
 function Packing() {
   const [items, setItems] = useState([
@@ -11,22 +12,15 @@ function Packing() {
   const [newItem, setNewItem] = useState("");
 
   const handleAddItem = (e) => {
-    if (e) e.preventDefault(); // Form submit refresh rokkega
+    if (e) e.preventDefault();
     if (!newItem.trim()) return;
-
-    // Naya item state me push karo
-    setItems((prevItems) => [
-      ...prevItems, 
-      { id: Date.now(), text: newItem.trim(), packed: false }
-    ]);
-    
-    setNewItem(""); // Input clear karo
+    setItems((prevItems) => [...prevItems, { id: Date.now(), text: newItem.trim(), packed: false }]);
+    setNewItem("");
   };
 
   const togglePack = (id) => {
-    setItems(
-      items.map((item) => (item.id === id ? { ...item, packed: !item.packed } : item))
-    );
+    if (navigator.vibrate) navigator.vibrate(40);
+    setItems(items.map((item) => (item.id === id ? { ...item, packed: !item.packed } : item)));
   };
 
   const handleDelete = (id) => {
@@ -34,85 +28,97 @@ function Packing() {
   };
 
   const packedCount = items.filter((i) => i.packed).length;
+  const progress = items.length > 0 ? Math.round((packedCount / items.length) * 100) : 0;
+
+  useEffect(() => {
+  const isDark = localStorage.getItem("isDarkMode") === "true";
+  if (isDark) {
+    document.documentElement.classList.add("dark");
+  } else {
+    document.documentElement.classList.remove("dark");
+  }
+}, []);
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-28">
-      {/* Header Layout */}
-      <div className="bg-linear-to-r from-purple-600 to-pink-600 rounded-b-[35px] p-5 pt-8 pb-10 text-white text-center shadow-md">
-        <h1 className="text-xl font-bold">Baggage Checklist</h1>
-        <p className="opacity-75 text-xs mt-1">Never leave your essentials behind</p>
+    <div className="min-h-screen bg-slate-50 pb-32 font-sans overflow-x-hidden">
+      {/* 🚀 PREMIUM GRADIENT HEADER */}
+      <div className="bg-linear-to-br from-indigo-600 to-purple-700 rounded-b-[40px] p-8 pt-12 pb-16 text-white text-center shadow-2xl relative">
+        <h1 className="text-2xl font-black tracking-tight">Baggage Checklist</h1>
+        <p className="text-indigo-100 text-xs font-medium mt-1 opacity-90 uppercase tracking-widest">Never leave essentials behind</p>
       </div>
 
-      {/* Completion Metric Card */}
-      <div className="mx-auto -mt-6 w-[88%] max-w-sm bg-white rounded-2xl p-4 shadow-lg border border-gray-100/50 relative z-10 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="bg-purple-50 text-purple-600 p-3 rounded-xl">
-            <FaSuitcase size={18} />
+      {/* 🚀 PROGRESS METRIC CARD */}
+      <div className="mx-5 -mt-10 bg-white rounded-3xl p-5 shadow-xl border border-gray-100 flex items-center justify-between z-10 relative">
+        <div className="flex items-center gap-4">
+          <div className="bg-indigo-50 text-indigo-600 p-4 rounded-2xl">
+            <FaSuitcase size={20} />
           </div>
           <div>
-            <h3 className="font-extrabold text-gray-800 text-xs">Packing Progress</h3>
-            <p className="text-[11px] text-gray-400 mt-0.5">
-              {packedCount} of {items.length} items grouped
-            </p>
+            <h3 className="font-black text-gray-800 text-sm">Packing Progress</h3>
+            <p className="text-[10px] text-gray-400 font-bold mt-0.5">{packedCount} of {items.length} items packed</p>
           </div>
         </div>
-        <span className="text-xs bg-purple-50 text-purple-700 font-extrabold px-3 py-1 rounded-full">
-          {items.length > 0 ? Math.round((packedCount / items.length) * 100) : 0}%
-        </span>
+        <div className="text-center">
+           <span className="text-lg font-black text-indigo-600">{progress}%</span>
+        </div>
       </div>
 
-      {/* Input Addition Inline Box */}
-      <div className="mx-auto mt-4 w-[88%] max-w-sm bg-white rounded-2xl p-3 shadow-sm border border-gray-100">
-        <form onSubmit={handleAddItem} className="flex gap-2">
+      {/* INPUT BOX */}
+      <div className="mx-5 mt-6">
+        <form onSubmit={handleAddItem} className="flex gap-2 bg-white p-2 rounded-2xl shadow-sm border border-gray-100">
           <input
             type="text"
-            placeholder="Add baggage item (e.g. Shoes)..."
+            placeholder="Add item (e.g. Headphones)..."
             value={newItem}
             onChange={(e) => setNewItem(e.target.value)}
-            className="flex-1 bg-slate-50 border border-gray-100 rounded-xl px-3 py-2 text-xs outline-none text-gray-800 font-medium"
+            className="flex-1 bg-transparent px-3 py-2 text-xs outline-none text-gray-800 font-bold"
           />
-          <button
-            type="submit"
-            className="bg-purple-600 text-white px-3 rounded-xl text-xs hover:bg-purple-700 active:scale-95 transition"
-          >
+          <button type="submit" className="bg-indigo-600 text-white p-3 rounded-xl text-xs hover:bg-indigo-700 active:scale-95 transition-all">
             <FaPlus />
           </button>
         </form>
       </div>
 
-      {/* Active Items Roll */}
-      <div className="mx-auto mt-4 w-[88%] max-w-sm space-y-2">
-        {items.map((item) => (
-          <div
-            key={item.id}   
-            onClick={() => {
-              if (navigator.vibrate) navigator.vibrate(40); // 👈 Halki tick wali vibration
-              togglePack(item.id);
-            }}            className={`border rounded-xl p-3 flex justify-between items-center cursor-pointer transition select-none ${
-              item.packed ? "bg-slate-50/80 border-gray-100 opacity-60" : "bg-white border-gray-100 shadow-sm"
-            }`}
-          >
-            <div className="flex items-center gap-3 flex-1">
-              <button className={`text-base ${item.packed ? "text-purple-600" : "text-gray-300"}`}>
-                {item.packed ? <FaCheckSquare /> : <FaSquare />}
-              </button>
-              <span className={`text-xs font-medium ${item.packed ? "line-through text-gray-400" : "text-gray-700"}`}>
-                {item.text}
-              </span>
-            </div>
-            
-            <button
-              onClick={(e) => {
-                e.stopPropagation(); // Stops event from triggering checkbox check toggle
-                handleDelete(item.id);
-              }}
-              className="text-gray-300 hover:text-red-500 p-1 text-xs transition"
+      {/* ACTIVE ITEMS LIST */}
+      <div className="mx-5 mt-6 space-y-3">
+        <AnimatePresence>
+          {items.map((item) => (
+            <motion.div
+              key={item.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              onClick={() => togglePack(item.id)}
+              className={`border rounded-2xl p-4 flex justify-between items-center cursor-pointer transition-all shadow-sm ${
+                item.packed ? "bg-slate-100 border-transparent opacity-60" : "bg-white border-gray-100"
+              }`}
             >
-              <FaTrashAlt />
-            </button>
-          </div>
-        ))}
+              <div className="flex items-center gap-4 flex-1">
+                <div className={`text-lg ${item.packed ? "text-indigo-600" : "text-gray-300"}`}>
+                  {item.packed ? <FaCheckSquare /> : <FaSquare />}
+                </div>
+                <span className={`text-xs font-bold ${item.packed ? "line-through text-gray-400" : "text-gray-700"}`}>
+                  {item.text}
+                </span>
+              </div>
+              
+              <button
+                onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
+                className="text-gray-300 hover:text-red-500 p-2 text-xs transition-colors"
+              >
+                <FaTrashAlt />
+              </button>
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
+
+      {items.length === 0 && (
+        <div className="mt-10 text-center opacity-50">
+          <FaCheckCircle className="mx-auto text-4xl text-gray-300 mb-2" />
+          <p className="text-xs font-bold text-gray-400">All packed! Ready to go.</p>
+        </div>
+      )}
 
       <BottomNav />
     </div>

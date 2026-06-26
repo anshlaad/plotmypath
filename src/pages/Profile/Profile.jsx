@@ -6,7 +6,7 @@ import { FaBriefcase, FaMoon, FaSun, FaSignOutAlt, FaChevronRight, FaInfoCircle,
 import BottomNav from "../../components/BottomNav";
 import { motion, AnimatePresence } from "framer-motion";
 import emailjs from '@emailjs/browser';
-
+import { useTheme } from '../../context/ThemeContext';
 // 🔥 Firebase Auth Imports
 import { getAuth, signOut } from "firebase/auth";
 
@@ -14,8 +14,7 @@ export default function Profile() {
   const { user, updateProfile } = useAuth();
   const navigate = useNavigate();
   const auth = getAuth(); // Firebase auth instance
-
-  const [darkMode, setDarkMode] = useState(false);
+  const { theme, setTheme } = useTheme();
   const [showAbout, setShowAbout] = useState(false);
   
   // 🗂️ NEW SEGMENT SWITCH: Tabs control system ("saved" or "favorites")
@@ -148,7 +147,7 @@ export default function Profile() {
     <motion.div 
       initial={{ opacity: 0 }} 
       animate={{ opacity: 1 }}
-      className={`min-h-screen pb-32 transition-colors duration-300 overflow-y-auto ${darkMode ? "bg-slate-900 text-white" : "bg-slate-50 text-gray-800"}`}
+     className={`min-h-screen pb-32 transition-colors duration-300 overflow-y-auto ${theme === 'dark' ? "bg-slate-900 text-white" : "bg-slate-50 text-gray-800"}`}
     >
       <motion.div className="bg-linear-to-r from-violet-600 to-indigo-600 rounded-b-[35px] p-6 pt-10 pb-12 text-white text-center shadow-lg relative">
         
@@ -332,20 +331,27 @@ export default function Profile() {
         className="mx-auto mt-4 w-[88%] max-w-sm bg-white dark:bg-slate-800 rounded-2xl p-2 shadow-sm border border-gray-100 dark:border-slate-700/50 space-y-1 mb-6"
       >
         <motion.div 
-          onClick={() => {
-            setDarkMode(!darkMode);
-            if (navigator.vibrate) navigator.vibrate(50); 
-          }} 
-          className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900/40 cursor-pointer transition"
-        >          
-          <div className="flex items-center gap-3">
-            <div className="bg-amber-50 dark:bg-amber-950/40 text-amber-600 p-2 rounded-xl text-xs">{darkMode ? <FaSun /> : <FaMoon />}</div>
-            <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Dark Mode Architecture</span>
-          </div>
-          <div className={`w-8 h-4 flex items-center rounded-full p-0.5 transition-all duration-300 ${darkMode ? "bg-indigo-600 justify-end" : "bg-gray-300 justify-start"}`}>
-            <div className="bg-white w-3 h-3 rounded-full shadow-md"></div>
-          </div>
-        </motion.div>
+      onClick={() => {
+        // Sirf context ko update karna hai, baaki sab app khud karegi
+        const newTheme = theme === 'light' ? 'dark' : 'light';
+        setTheme(newTheme); 
+        
+        if (navigator.vibrate) navigator.vibrate(50); 
+      }} 
+      className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900/40 cursor-pointer transition mt-4"
+    >           
+      <div className="flex items-center gap-3">
+        <div className="bg-amber-50 dark:bg-amber-950/40 text-amber-600 p-2 rounded-xl text-xs">
+          {theme === 'dark' ? <FaSun /> : <FaMoon />}
+        </div>
+        <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Theme </span>
+      </div>
+      
+      <div className={`w-8 h-4 flex items-center rounded-full p-0.5 transition-all duration-300 ${theme === 'dark' ? "bg-indigo-600 justify-end" : "bg-gray-300 justify-start"}`}>
+        <div className="bg-white w-3 h-3 rounded-full shadow-md"></div>
+      </div>
+    </motion.div>
+
 
         <motion.div onClick={() => setShowAbout(!showAbout)} className="flex flex-col p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900/40 cursor-pointer transition text-left">
           <div className="flex items-center justify-between w-full">

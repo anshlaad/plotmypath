@@ -108,7 +108,7 @@ function Onboarding() {
 
       <button
 
-      onClick={()=>navigate("/login")}
+      onClick={()=>navigate("/home")}
 
       className="bg-indigo-600 text-white px-8 py-3 rounded-full"
 

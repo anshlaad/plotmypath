@@ -41,3 +41,136 @@ body::-webkit-scrollbar {
 .overflow-x-auto::-webkit-scrollbar {
   display: none;             /* Chrome, Safari, and Opera */
 }
+
+/* Sabhi browsers ke liye scrollbar hide karega */
+::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, and Opera */
+}
+
+html, body {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+:root {
+  --bg-color: #f8fafc;
+  --card-bg: #ffffff;
+  --text-main: #1e293b;
+  --text-muted: #94a3b8;
+}
+
+[data-theme='dark'] {
+  --bg-color: #0f172a; /* Dark background */
+  --card-bg: #1e293b; /* Dark card color */
+  --text-main: #f8fafc;
+  --text-muted: #64748b;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  transition: background 0.3s, color 0.3s;
+}
+
+/* src/index.css */
+
+:root {
+  /* Default Colors (Light) */
+  --bg-color: #f8fafc;
+  --text-main: #1e293b;
+  --card-bg: #ffffff;
+}
+
+/* Jab .dark class html par aayegi */
+.dark {
+  --bg-color: #0f172a;
+  --text-main: #f1f5f9;
+  --card-bg: #1e293b;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Glassy effect class */
+.glass-box {
+  background: var(--card-bg);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* =========================================
+   🚀 GLOBAL DARK MODE OVERRIDE
+========================================= */
+
+/* 1. Main Backgrounds ko Dark karega */
+html.dark body,
+html.dark #root,
+html.dark .min-h-screen,
+html.dark .bg-slate-50 {
+  background-color: #0f172a !important; /* Dark Slate 900 */
+  color: #f1f5f9 !important;
+}
+
+/* 2. Saare White Cards/Boxes ko Dark karega */
+html.dark .bg-white {
+  background-color: #1e293b !important; /* Dark Slate 800 */
+  border-color: #334155 !important; /* Dark borders */
+  color: #f1f5f9 !important;
+}
+
+/* 3. Global Text Colors ko White karega */
+html.dark h1, 
+html.dark h2, 
+html.dark h3, 
+html.dark h4, 
+html.dark p, 
+html.dark span {
+  color: #f1f5f9 !important;
+}
+
+/* 4. Muted text (Subheadings & Icons) ko soft grey karega */
+html.dark .text-gray-400, 
+html.dark .text-gray-500,
+html.dark .text-gray-700,
+html.dark .text-gray-800 {
+  color: #94a3b8 !important; /* Light Grey */
+}
+
+/* 5. Inputs, Select boxes aur unke Wrappers ko sleek banayein */
+html.dark input, 
+html.dark select,
+html.dark .bg-gray-50 {
+  background-color: #2a364a !important; /* Premium dark shade */
+  color: #ffffff !important;
+  border-color: #3f4e66 !important; 
+}
+
+/* 6. Transparent inputs ko transparent hi rakhein (Note box ke liye) */
+html.dark .bg-transparent {
+  background-color: transparent !important;
+  border: none !important;
+  outline: none !important;
+}
+
+/* 7. Planner Page Time Badges & Light Pills Fix */
+/* ⚠️ Yahan se bg-slate-50 hata diya hai taaki Block 1 se clash na kare */
+html.dark .bg-indigo-50,
+html.dark .bg-blue-50,
+html.dark .bg-gray-100,
+html.dark .bg-slate-100,
+html.dark .bg-purple-50 {
+  background-color: #334155 !important; /* Premium Dark Badge Color */
+  color: #f1f5f9 !important;
+  border: 1px solid #475569 !important; 
+}
+
+/* Ensure ki inke andar ka text properly white show ho */
+html.dark .bg-indigo-50 *,
+html.dark .bg-blue-50 *,
+html.dark .bg-gray-100 *,
+html.dark .bg-purple-50 * {
+  color: #f1f5f9 !important;
+}

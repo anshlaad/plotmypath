@@ -1,17 +1,26 @@
-import { useState } from "react";
-import { FaWallet, FaPlus, FaTrashAlt, FaUtensils, FaHotel, FaCar, FaShoppingBag } from "react-icons/fa";
+import React, { useState, useEffect } from "react";
+import { FaPlus, FaTrashAlt, FaUtensils, FaHotel, FaCar, FaShoppingBag, FaWallet, FaEdit, FaCheck, FaStickyNote } from "react-icons/fa";
 import BottomNav from "../../components/BottomNav";
+import { motion, AnimatePresence } from "framer-motion";
 
 function Budget() {
-  const [expenses, setExpenses] = useState([
-    { id: 1, category: "Hotel", amount: 4500, icon: <FaHotel /> },
-    { id: 2, category: "Food", amount: 1800, icon: <FaUtensils /> },
-    { id: 3, category: "Travel", amount: 2500, icon: <FaCar /> },
-  ]);
-
+  const [expenses, setExpenses] = useState(() => JSON.parse(localStorage.getItem("my_trip_expenses") || "[]"));
+  const [totalBudget, setTotalBudget] = useState(() => Number(localStorage.getItem("my_trip_budget") || 15000));
+  
+  const [isEditingBudget, setIsEditingBudget] = useState(false);
+  const [tempBudget, setTempBudget] = useState(totalBudget);
+  
   const [category, setCategory] = useState("Food");
   const [amount, setAmount] = useState("");
-  const totalBudget = 15000;
+  const [note, setNote] = useState("");
+  
+  // 🟢 Edit mode ke liye states
+  const [editingId, setEditingId] = useState(null);
+
+  useEffect(() => {
+    localStorage.setItem("my_trip_expenses", JSON.stringify(expenses));
+    localStorage.setItem("my_trip_budget", totalBudget);
+  }, [expenses, totalBudget]);
 
   const totalSpent = expenses.reduce((sum, item) => sum + Number(item.amount), 0);
   const remaining = totalBudget - totalSpent;
@@ -21,130 +30,99 @@ function Budget() {
     e.preventDefault();
     if (!amount || amount <= 0) return;
 
-    const iconMap = {
-      Food: <FaUtensils />,
-      Hotel: <FaHotel />,
-      Travel: <FaCar />,
-      Shopping: <FaShoppingBag />,
-    };
-
-    const newExpense = {
-      id: Date.now(),
-      category,
-      amount: Number(amount),
-      icon: iconMap[category],
-    };
-
-    setExpenses([...expenses, newExpense]);
-    setAmount("");
+    if (editingId) {
+      // 🟢 Update existing
+      setExpenses(expenses.map(exp => exp.id === editingId ? { ...exp, category, amount: Number(amount), note } : exp));
+      setEditingId(null);
+    } else {
+      // 🟢 Add new
+      setExpenses([{ id: Date.now(), category, amount: Number(amount), note, date: new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) }, ...expenses]);
+    }
+    setAmount(""); setNote("");
   };
 
-  const handleDelete = (id) => {
-    setExpenses(expenses.filter((item) => item.id !== id));
+  const startEdit = (item) => {
+    setEditingId(item.id);
+    setCategory(item.category);
+    setAmount(item.amount);
+    setNote(item.note);
+  };
+
+  const getIcon = (cat) => {
+    switch(cat) {
+      case 'Food': return <FaUtensils />;
+      case 'Hotel': return <FaHotel />;
+      case 'Travel': return <FaCar />;
+      case 'Shopping': return <FaShoppingBag />;
+      default: return <FaWallet />;
+    }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-28">
-      {/* Premium Compact Header */}
-      <div className="bg-linear-to-r from-blue-600 to-indigo-600 rounded-b-[35px] p-5 pt-8 pb-10 text-white text-center shadow-md">
-        <h1 className="text-xl font-bold">Expense Analytics</h1>
-        <p className="opacity-75 text-xs mt-1">Keep your vacation pocket-friendly</p>
+    <div className="min-h-screen bg-slate-50 pb-32 font-sans">
+      <div className="bg-linear-to-br from-indigo-600 to-purple-700 rounded-b-[40px] p-8 pb-16 text-white text-center shadow-2xl">
+        <h1 className="text-2xl font-black">Budget Analytics</h1>
+        <p className="text-indigo-100 text-xs opacity-90 uppercase tracking-widest">Financial Controller</p>
       </div>
 
-      {/* Analytics Card */}
-      <div className="mx-auto -mt-6 w-[88%] max-w-sm bg-white rounded-2xl p-4 shadow-lg border border-gray-100/50 relative z-10">
-        <div className="flex justify-between items-center border-b border-gray-100 pb-3">
+      <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="mx-5 -mt-10 bg-white rounded-3xl p-6 shadow-xl border border-gray-100 z-10 relative">
+        <div className="flex justify-between items-center mb-6">
           <div>
-            <p className="text-[10px] uppercase font-bold text-gray-400">Total Budget</p>
-            <h2 className="text-lg font-extrabold text-gray-800">₹{totalBudget.toLocaleString()}</h2>
+            <p className="text-[10px] uppercase font-black text-gray-400">Total Budget</p>
+            {isEditingBudget ? (
+              <input type="number" value={tempBudget} onChange={(e) => setTempBudget(e.target.value)} className="w-20 text-lg font-black text-indigo-600 bg-indigo-50 p-1 rounded-lg outline-none" />
+            ) : <h2 className="text-lg font-black text-gray-800">₹{totalBudget.toLocaleString()}</h2>}
           </div>
-          <div className="text-right">
-            <p className="text-[10px] uppercase font-bold text-gray-400">Remaining</p>
-            <h2 className={`text-lg font-extrabold ${remaining < 2000 ? "text-red-500" : "text-emerald-500"}`}>
-              ₹{remaining.toLocaleString()}
-            </h2>
-          </div>
-        </div>
-
-        {/* Custom Progress Bar */}
-        <div className="mt-4">
-          <div className="flex justify-between text-[10px] font-bold text-gray-500 mb-1">
-            <span>Spent: ₹{totalSpent.toLocaleString()}</span>
-            <span>{Math.round(percentageSpent)}%</span>
-          </div>
-          <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
-            <div 
-              className={`h-full transition-all duration-500 ${percentageSpent > 85 ? "bg-red-500" : "bg-indigo-600"}`}
-              style={{ width: `${percentageSpent}%` }}
-            ></div>
-          </div>
-        </div>
-      </div>
-
-      {/* Add Expense Mini Form */}
-      <div className="mx-auto mt-4 w-[88%] max-w-sm bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-        <h3 className="text-xs font-bold text-gray-800 mb-3">Add New Expense</h3>
-        <form onSubmit={handleAddExpense} className="flex gap-2">
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="bg-slate-50 border border-gray-100 rounded-xl px-2 py-2 text-xs font-medium outline-none text-gray-700"
-          >
-            <option value="Food">🍔 Food</option>
-            <option value="Hotel">🏨 Hotel</option>
-            <option value="Travel">🚗 Travel</option>
-            <option value="Shopping">🛍️ Shop</option>
-          </select>
-          
-          <input
-            type="number"
-            placeholder="Amount (₹)"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="flex-1 bg-slate-50 border border-gray-100 rounded-xl px-3 py-2 text-xs outline-none text-gray-800 font-medium"
-          />
-
-          <button
-            type="submit"
-            className="bg-indigo-600 text-white p-2.5 rounded-xl text-xs hover:bg-indigo-700 active:scale-95 transition"
-          >
-            <FaPlus />
+          <button onClick={() => isEditingBudget ? (setTotalBudget(Number(tempBudget)), setIsEditingBudget(false)) : setIsEditingBudget(true)} className="p-2 bg-gray-50 rounded-xl text-gray-500">
+            {isEditingBudget ? <FaCheck className="text-emerald-500" /> : <FaEdit />}
           </button>
+        </div>
+        <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+          <div className={`h-full ${percentageSpent > 85 ? "bg-red-500" : "bg-indigo-600"}`} style={{ width: `${percentageSpent}%` }} />
+        </div>
+      </motion.div>
+
+      <div className="mx-5 mt-6 bg-white p-5 rounded-3xl shadow-sm border border-gray-100">
+        <form onSubmit={handleAddExpense} className="space-y-3">
+          <div className="flex gap-2">
+            <select value={category} onChange={(e) => setCategory(e.target.value)} className="bg-gray-50 rounded-2xl px-2 py-3 text-[10px] font-black w-1/3">
+              <option value="Food">🍔 Food</option><option value="Hotel">🏨 Hotel</option>
+              <option value="Travel">🚗 Travel</option><option value="Shopping">🛍️ Shop</option>
+            </select>
+            <input type="number" placeholder="₹ Amount" value={amount} onChange={(e) => setAmount(e.target.value)} className="flex-1 bg-gray-50 rounded-2xl px-4 py-3 text-xs font-bold" />
+          </div>
+          <div className="flex items-center gap-2 bg-gray-50 rounded-2xl px-3 py-2">
+             <FaStickyNote className="text-gray-400 text-xs"/><input type="text" placeholder="Note..." value={note} onChange={(e) => setNote(e.target.value)} className="w-full bg-transparent text-[10px] font-bold" />
+          </div>
+          <button type="submit" className="w-full bg-indigo-600 text-white py-3 rounded-2xl text-xs font-black">{editingId ? "Update Expense" : "Add Expense"}</button>
         </form>
       </div>
 
-      {/* Expense List Logging */}
-      <div className="mx-auto mt-4 w-[88%] max-w-sm space-y-2">
-        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider pl-1">Logs</h3>
-        
-        {expenses.length === 0 ? (
-          <p className="text-center text-xs text-gray-400 py-4">No expenses recorded yet.</p>
-        ) : (
-          expenses.map((item) => (
-            <div key={item.id} className="bg-white border border-gray-100 rounded-xl p-3 flex justify-between items-center shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="bg-indigo-50 text-indigo-600 p-2.5 rounded-xl text-xs">
-                  {item.icon}
-                </div>
+      <div className="mx-5 mt-6 space-y-3 pb-10">
+        <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest pl-1">Logs</h3>
+        <AnimatePresence>
+          {expenses.map((item) => (
+            <motion.div key={item.id} className="bg-white border border-gray-100 rounded-2xl p-4 flex justify-between items-center shadow-sm">
+              <div className="flex items-center gap-4">
+                <div className="bg-indigo-50 text-indigo-600 p-3 rounded-2xl text-sm">{getIcon(item.category)}</div>
                 <div>
-                  <h4 className="font-bold text-gray-800 text-xs">{item.category}</h4>
-                  <p className="text-[9px] text-gray-400">Just now</p>
+                  <h4 className="font-black text-gray-800 text-xs">{item.category}</h4>
+                  <p className="text-[9px] text-gray-400 font-bold truncate">{item.note}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="font-extrabold text-gray-800 text-xs">₹{item.amount}</span>
-                <button 
-                  onClick={() => handleDelete(item.id)}
-                  className="text-gray-300 hover:text-red-500 transition text-xs p-1"
-                >
-                  <FaTrashAlt />
-                </button>
+              <div className="flex items-center gap-2">
+                <span className="font-black text-gray-800 text-xs">₹{item.amount}</span>
+                <button onClick={() => startEdit(item)} className="text-indigo-500 p-1"><FaEdit size={12} /></button>
+                <button onClick={() => setExpenses(expenses.filter(e => e.id !== item.id))} className="text-red-400 p-1"><FaTrashAlt size={12} /></button>
               </div>
-            </div>
-          ))
-        )}
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
 
+      <div className="text-center pb-10">
+        <p className="text-[10px] font-bold text-gray-400">Designed by PlotMyPath</p>
+      </div>
       <BottomNav />
     </div>
   );

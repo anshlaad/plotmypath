@@ -3,17 +3,14 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useSwipeable } from "react-swipeable";
 import { motion, AnimatePresence } from "framer-motion";
 import AppRoutes from "./routes/AppRoutes.jsx";
-
-// 👇 FIX 1: Missing Imports add kar diye hain
+import { ThemeProvider, useTheme } from './context/ThemeContext.jsx'; // 🟢 useTheme import kiya
 import { requestForToken, db } from './firebase/config';
 import { doc, setDoc } from "firebase/firestore"; 
-import { useAuth } from "./context/AuthContext"; // Path check kar lena agar alag ho
+import { useAuth } from "./context/AuthContext";
 
-// 🌟 FIX 2: INVISIBLE BACKGROUND COMPONENT 
-// Ye component UI mein kuch nahi dikhayega, bas chup-chaap peeche token save karega
+// 🌟 Notification Manager (No change here)
 function NotificationManager() {
   const { user } = useAuth(); 
-
   useEffect(() => {
     const setupNotifications = async () => {
       const token = await requestForToken();
@@ -21,101 +18,94 @@ function NotificationManager() {
         if (user) {
           const userRef = doc(db, "users", user.uid);
           await setDoc(userRef, { fcmToken: token }, { merge: true });
-          console.log("Token saved to User Profile!");
         } else {
           const guestRef = doc(db, "guest_tokens", token);
           await setDoc(guestRef, { token: token, createdAt: new Date().toISOString() });
-          console.log("Guest Token saved!");
         }
       }
     };
     setupNotifications();
   }, [user]);
-
-  return null; // Hidden component
+  return null;
 }
 
+
+
+// 🟢 Wrapper component taaki "dark" class globally apply ho sake
+function ThemeWrapper({ children }) {
+  const { theme } = useTheme();
+  useEffect(() => {
+    // Jab bhi theme badlegi, ye html tag pe dark class toggle karega
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
+  
+  return <>{children}</>;
+}
 
 function App() {
   const navigate = useNavigate();
   const location = useLocation();
-  
-  // Ye track karega ki slide kis taraf hona chahiye (Left ya Right)
   const [direction, setDirection] = useState(0);
 
-  // 🔥 IMPORTANT: Apne asli URLs ka order yahan likhna
-  const pageOrder = ['/','/home',  '/explore', '/planner', '/packing', '/split-expense', '/profile']; 
+  const pageOrder = ['/','/home', '/explore', '/planner', '/packing', '/split-expense', '/profile']; 
 
-  // Swipe Detect Logic
   const handlers = useSwipeable({
     onSwipedLeft: () => {
       const currentIndex = pageOrder.indexOf(location.pathname);
       if (currentIndex !== -1 && currentIndex < pageOrder.length - 1) {
-        setDirection(1); // Aage badh rahe hain
+        setDirection(1);
         navigate(pageOrder[currentIndex + 1]);
       }
     },
     onSwipedRight: () => {
       const currentIndex = pageOrder.indexOf(location.pathname);
       if (currentIndex > 0) {
-        setDirection(-1); // Peeche ja rahe hain
+        setDirection(-1);
         navigate(pageOrder[currentIndex - 1]);
       }
     },
     preventScrollOnSwipe: false,
-    trackMouse: true // PC par test karne ke liye true rakha hai
+    trackMouse: true
   });
 
-  // 🚀 Animation Variants (Ye slide ko smooth banayega bina black screen ke)
   const pageVariants = {
-    initial: (dir) => ({
-      x: dir > 0 ? "100%" : "-100%", // Naya page bahar se aayega
-      opacity: 1,
-    }),
-    animate: {
-      x: 0,
-      opacity: 1,
-      transition: { type: "tween", ease: "easeOut", duration: 0.25 }
-    },
-    exit: (dir) => ({
-      x: dir > 0 ? "-30%" : "30%", // Purana page thoda piche khisak jayega (Premium Feel)
-      opacity: 0.5, // Thoda dark ho jayega taaki naya page pop ho
-      transition: { type: "tween", ease: "easeOut", duration: 0.25 }
-    })
+    initial: (dir) => ({ x: dir > 0 ? "100%" : "-100%", opacity: 1 }),
+    animate: { x: 0, opacity: 1, transition: { type: "tween", ease: "easeOut", duration: 0.25 } },
+    exit: (dir) => ({ x: dir > 0 ? "-30%" : "30%", opacity: 0.5, transition: { type: "tween", ease: "easeOut", duration: 0.25 } })
   };
 
   return (
-    // ✨ OUTER WRAPPER
-    <div className="min-h-screen w-full bg-black flex justify-center overflow-hidden">
-      
-      {/* 🚀 Ye humara invisible guard hai jo backend handle karega */}
-      <NotificationManager />
-
-      {/* 📱 MOBILE CONTAINER */}
-      <div 
-        {...handlers} 
-        // 👇 Yahan overflow-x-hidden kar diya hai
-        className="w-full max-w-md bg-slate-900 h-screen relative shadow-[0_0_50px_rgba(0,0,0,0.5)] border-x border-slate-800 overflow-x-hidden"
-      >
-        
-        {/* AnimatePresence pages ko control karega */}
-        <AnimatePresence initial={false} custom={direction} mode="popLayout">
-          <motion.div
-            key={location.pathname}
-            custom={direction}
-            variants={pageVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            // 👇 Yahan h-screen aur overflow-y-auto add kiya hai taaki har page apne aap scroll ho
-            className="w-full h-screen absolute top-0 left-0 bg-slate-900 overflow-y-auto overflow-x-hidden" 
+    <ThemeProvider>
+      <ThemeWrapper>
+        <div className="min-h-screen w-full bg-black flex justify-center overflow-hidden">
+          <NotificationManager />
+          
+          {/* 📱 MOBILE CONTAINER - Background ab dynamic hoga dark mode ke hisaab se */}
+          <div 
+            {...handlers} 
+            className="w-full max-w-md bg-slate-50 dark:bg-slate-900 h-screen relative shadow-[0_0_50px_rgba(0,0,0,0.5)] border-x border-slate-200 dark:border-slate-800 overflow-x-hidden"
           >
-            <AppRoutes />
-          </motion.div>
-        </AnimatePresence>
-
-      </div>
-    </div>
+            <AnimatePresence initial={false} custom={direction} mode="popLayout">
+              <motion.div
+                key={location.pathname}
+                custom={direction}
+                variants={pageVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                className="w-full h-full absolute top-0 left-0 overflow-y-auto overflow-x-hidden" 
+              >
+                <AppRoutes />
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </div>
+      </ThemeWrapper>
+    </ThemeProvider>
   );
 }
 

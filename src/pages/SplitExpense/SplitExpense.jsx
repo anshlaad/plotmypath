@@ -5,6 +5,7 @@ import { collection, doc, setDoc, addDoc, onSnapshot, query, orderBy, updateDoc,
 import { FaPlus, FaUsers, FaShareAlt, FaBell, FaCheckSquare, FaRegSquare, FaTrash, FaArrowLeft, FaSuitcase } from "react-icons/fa";
 import BottomNav from "../../components/BottomNav";
 import { countries } from 'country-data';
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function SplitExpense() {
   const [userName, setUserName] = useState("Loading...");
@@ -167,7 +168,7 @@ export default function SplitExpense() {
 
   const handleAddExpense = async (e) => {
     e.preventDefault();
-    if (!description || !amount || !paidBy) return alert("Sab fields bharo!");
+    if (!description || !amount || !paidBy) return alert("Fill All!");
     try {
       await addDoc(collection(db, "trips", groupId, "expenses"), {
         description, amount: parseFloat(amount), paidBy, splitAmong, createdAt: new Date() 
@@ -179,7 +180,7 @@ export default function SplitExpense() {
   };
 
   return (
-    <div className="h-screen w-full bg-slate-900/45 text-white flex flex-col font-sans overflow-hidden">
+    <motion.div className="h-screen w-full bg-slate-900/45 text-white flex flex-col font-sans overflow-hidden">
       
       {/* 👤 Identity Selection Popup (Jab Join karte hain) */}
       {pendingJoinTrip && (
@@ -217,22 +218,23 @@ export default function SplitExpense() {
       )}
 
       {/* 🔔 Notification UI Popup */}
+        <AnimatePresence>
       {notification && (
-        <div className="fixed top-5 left-5 right-5 z-50 bg-indigo-600 px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3">
+        <motion.div className="fixed top-5 left-5 right-5 z-50 bg-indigo-600 px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3">
           <FaBell className="text-amber-400 shrink-0" />
           <p className="text-xs font-bold">{notification}</p>
-        </div>
+        </motion.div>
       )}
-
+       </AnimatePresence>
       {/* Header */}
-      <div className="bg-slate-800/40 backdrop-blur-md p-6 rounded-b-3xl border-b border-slate-700 shadow-xl relative">
+      <motion.div className="bg-slate-800/40 backdrop-blur-md p-6 rounded-b-3xl border-b border-slate-700 shadow-xl relative">
         {groupId && (
           <button onClick={() => setGroupId("")} className="absolute top-6 left-5 text-indigo-400 text-lg">
             <FaArrowLeft />
           </button>
         )}
         <h1 className="text-2xl font-black text-indigo-400 text-center">
-          {tripDetails && groupId ? tripDetails.name : "Split Expenses"}
+          <h1 className="text-2xl font-black tracking-tight">{tripDetails && groupId ? tripDetails.name : "Split Expenses"}</h1>
         </h1>
         {groupId && (
           <div className="text-center mt-2">
@@ -241,7 +243,7 @@ export default function SplitExpense() {
             </span>
           </div>
         )}
-      </div>
+      </motion.div>
 
       <div className="flex-1 overflow-y-auto p-5 space-y-6 pb-28">
         
@@ -252,8 +254,7 @@ export default function SplitExpense() {
             {/* 📁 Saved Trips */}
             {savedTrips.length > 0 && (
               <div className="space-y-3">
-                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider ml-1">📂 My Trips</h3>
-                {savedTrips.map(trip => (
+                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest pl-1">📂 My Trips</h3>                {savedTrips.map(trip => (
                   <div key={trip.id} onClick={() => setGroupId(trip.id)} className="bg-slate-800/40 backdrop-blur-md p-4 rounded-2xl border border-slate-700 flex justify-between items-center cursor-pointer hover:border-indigo-500 transition-colors">
                     <span className="font-bold text-sm flex items-center gap-3"><FaSuitcase className="text-indigo-400 text-lg"/> {trip.name}</span>
                     <button onClick={(e) => { e.stopPropagation(); setSavedTrips(savedTrips.filter(t => t.id !== trip.id)); }} className="text-rose-500 p-2"><FaTrash /></button>
@@ -273,14 +274,13 @@ export default function SplitExpense() {
                   <input type="text" placeholder="Friend Name *" value={newMemberName} onChange={(e) => setNewMemberName(e.target.value)} className="w-full bg-slate-900/45 backdrop-blur-md border border-slate-700 rounded-xl px-3 py-2.5 text-xs" />
                   <div className="flex gap-2">
                     <select 
-  value={countryCode} 
-  onChange={(e) => setCountryCode(e.target.value)} 
-  className="bg-slate-900 border border-slate-700 rounded-xl px-2 py-2.5 text-xs text-slate-300 w-1/3"
->
-  {countryCodes.map(c => (
-    <option key={c.code} value={c.code}>{c.name} ({c.code})</option>
-  ))}
-</select>
+                     value={countryCode} 
+                     onChange={(e) => setCountryCode(e.target.value)} 
+                     className="bg-slate-900 border border-slate-700 rounded-xl px-2 py-2.5 text-xs text-slate-300 w-1/3">
+                     {countryCodes.map(c => (
+                       <option key={c.code} value={c.code}>{c.name} ({c.code})</option>
+                     ))}
+                   </select>
                     <input type="number" placeholder="Mobile (Optional)" value={newMemberPhone} onChange={(e) => setNewMemberPhone(e.target.value)} className="w-full bg-slate-900/45 backdrop-blur-md border border-slate-700 rounded-xl px-3 py-2.5 text-xs" />
                   </div>
                   <button onClick={handleAddMember} type="button" className="w-full bg-indigo-600/20 text-indigo-400 py-2.5 rounded-xl text-xs font-bold border border-indigo-500/50">+ Add Friend</button>
@@ -388,6 +388,6 @@ export default function SplitExpense() {
         )}
       </div>
       <BottomNav />
-    </div>
+    </motion.div>
   );
 }
