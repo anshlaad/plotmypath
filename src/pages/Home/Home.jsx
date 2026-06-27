@@ -18,6 +18,12 @@ export default function Home() {
   const [language, setLanguage] = useState(null);
   const popupRef = useRef(null);
   const [adminNotifs, setAdminNotifs] = useState([]);
+  const videos = ["/intro.mp4", "/second-video.mp4"];
+  const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+
+  const handleVideoEnd = () => {
+    setCurrentVideoIndex((prev) => (prev === videos.length - 1 ? 0 : prev + 1));
+  };
   
   const [seenNotifs, setSeenNotifs] = useState(() => {
     const saved = localStorage.getItem("plotmypath_seen_notifs");
@@ -398,16 +404,17 @@ export default function Home() {
             <div className="px-5 mt-6 mb-2">
               <div className="rounded-2xl overflow-hidden shadow-lg relative border border-gray-100 bg-black group cursor-pointer">
                 <video 
-                  className="w-full h-44 object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-300"
+                  key={videos[currentVideoIndex]} // Key zaroori hai taaki video reload ho
+                  className="w-full aspect-video object-cover opacity-80"
                   autoPlay 
-                  loop 
                   muted 
                   playsInline
-                  src="/intro.mp4" 
+                  onEnded={handleVideoEnd} // Video khatam hote hi handleVideoEnd chalega
+                  src={videos[currentVideoIndex]} 
                 />
-                <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4 pointer-events-none">
-                  <h3 className="text-white font-black text-base drop-shadow-md">PlotMyPath in Action 🚀</h3>
-                  <p className="text-gray-200 text-xs font-medium drop-shadow-md">See how we plan your perfect trip.</p>
+                {/* Overlay content */}
+                <div className="absolute inset-0 p-4 pointer-events-none">
+                  <h3 className="text-white font-black text-base">Intoducing PlotMyPath🚀</h3>
                 </div>
               </div>
             </div>
