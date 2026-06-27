@@ -9,7 +9,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate', // App apne aap background mein update ho jayegi
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png'], // (Agar ye files nahi hain, toh bhi koi dikkat nahi)
+      includeAssets: ['logo-512x512.png', 'logo-192x192.png', 'favicon.png'], // (Agar ye files nahi hain, toh bhi koi dikkat nahi)
       manifest: {
         name: 'PlotMyPath',
         short_name: 'PlotMyPath',

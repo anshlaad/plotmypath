@@ -7,6 +7,7 @@ import { ThemeProvider, useTheme } from './context/ThemeContext.jsx'; // 🟢 us
 import { requestForToken, db } from './firebase/config';
 import { doc, setDoc } from "firebase/firestore"; 
 import { useAuth } from "./context/AuthContext";
+import ReloadPrompt from './components/ReloadPrompt';
 
 // 🌟 Notification Manager (No change here)
 function NotificationManager() {
